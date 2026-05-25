@@ -1,0 +1,1958 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NoodleNoodle 高蛋白纖維麵 決策系統 v4</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#0f1117;--card:#1a1d27;--card2:#22263a;
+  --accent:#6c63ff;--a2:#f7971e;
+  --green:#22d3a0;--red:#ff5c5c;--yellow:#ffd93d;
+  --text:#e8eaed;--t2:#9aa0b4;--border:#2d3150;
+  --gold:#e8b84b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;padding:14px 12px 60px;}
+
+/* ── Header ── */
+.hdr{text-align:center;margin-bottom:12px;}
+h1{font-size:1.65rem;font-weight:900;background:linear-gradient(135deg,#6c63ff,#f7971e);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.subtitle{font-size:.78rem;color:var(--t2);margin:2px 0 9px;}
+.tab-bar{display:flex;justify-content:center;align-items:center;gap:7px;flex-wrap:wrap;}
+.tab-btn{padding:6px 16px;border-radius:18px;border:1.5px solid var(--border);
+  background:transparent;color:var(--t2);cursor:pointer;font-size:.8rem;font-weight:600;font-family:inherit;transition:all .18s;}
+.tab-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.export-btn{padding:6px 16px;border-radius:18px;border:1.5px solid var(--a2);
+  background:rgba(247,151,30,.15);color:var(--a2);cursor:pointer;font-size:.8rem;font-weight:700;font-family:inherit;transition:all .18s;}
+.export-btn:hover{background:var(--a2);color:#000;}
+
+/* ── Board sub-tabs ── */
+.board-tabs{display:flex;gap:7px;margin-bottom:11px;flex-wrap:wrap;}
+.board-tab-btn{padding:7px 20px;border-radius:20px;border:1.5px solid var(--border);
+  background:transparent;color:var(--t2);cursor:pointer;font-size:.82rem;font-weight:700;font-family:inherit;transition:all .18s;}
+.board-tab-btn.b1.active{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 14px rgba(108,99,255,.35);}
+.board-tab-btn.b2.active{background:var(--a2);border-color:var(--a2);color:#000;box-shadow:0 0 14px rgba(247,151,30,.35);}
+
+/* ── Layout ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:11px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:15px;}
+.card-full{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:11px;}
+
+/* Formula card — gold accent */
+.formula-card{background:var(--card);border:2px solid var(--gold);border-radius:14px;padding:16px;margin-bottom:11px;
+  box-shadow:0 0 24px rgba(232,184,75,.12);}
+.formula-title{font-size:1rem;font-weight:800;color:var(--gold);margin-bottom:13px;
+  padding-bottom:10px;border-bottom:1px solid rgba(232,184,75,.3);display:flex;align-items:center;gap:8px;}
+
+.card-title{font-size:.88rem;font-weight:700;color:var(--accent);margin-bottom:11px;
+  padding-bottom:8px;border-bottom:1px solid var(--border);}
+.sec-lbl{font-size:.67rem;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:1.1px;margin:9px 0 6px;}
+.divider{height:1px;background:var(--border);margin:9px 0;}
+.sub-panel{background:var(--card2);border-radius:8px;padding:10px 12px;margin-top:7px;}
+
+/* ── Sliders ── */
+.sg{margin-bottom:10px;}
+.sl{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.sn{font-size:.79rem;color:var(--t2);}
+.sv{font-size:.8rem;font-weight:700;min-width:68px;text-align:right;}
+input[type=range]{width:100%;height:5px;border-radius:3px;appearance:none;-webkit-appearance:none;
+  background:var(--border);outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;
+  background:var(--accent);cursor:pointer;box-shadow:0 0 5px rgba(108,99,255,.45);}
+input[type=range]:disabled{opacity:.3;cursor:default;}
+input[type=range]:disabled::-webkit-slider-thumb{background:var(--t2);}
+/* Price sliders — orange accent */
+input[type=range].price-sl::-webkit-slider-thumb{background:var(--a2);box-shadow:0 0 5px rgba(247,151,30,.45);}
+input[type=range].price-sl::-webkit-slider-runnable-track{background:rgba(247,151,30,.18);}
+
+/* ── Checkboxes ── */
+input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--accent);}
+.ck-row{display:flex;align-items:center;gap:7px;margin-bottom:4px;}
+.ck-label{font-size:.81rem;cursor:pointer;}
+
+/* ── Ingredient blocks ── */
+.ing-block{border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-bottom:7px;transition:opacity .2s;}
+.ing-block.disabled{opacity:.38;}
+.ing-header{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+.ing-name-input{background:var(--card2);border:1px solid var(--border);border-radius:5px;
+  color:var(--text);padding:2px 6px;font-size:.78rem;width:105px;font-family:inherit;}
+.ing-sliders{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+
+/* ── Ratio bar ── */
+.ratio-bar{display:flex;height:7px;border-radius:4px;overflow:hidden;margin:5px 0 2px;}
+.rseg{height:100%;transition:width .3s;}
+
+/* ── Formula Table ── */
+.ftable{width:100%;border-collapse:collapse;font-size:.79rem;margin-top:10px;}
+.ftable thead tr{background:#1b1e2e;}
+.ftable th{padding:7px 9px;text-align:left;font-weight:700;font-size:.72rem;color:var(--gold);border-bottom:2px solid rgba(232,184,75,.3);}
+.ftable td{padding:5px 9px;border-bottom:1px solid var(--border);vertical-align:top;}
+.ftable tr:last-child td{border-bottom:none;}
+.ftable tr.total-row{background:rgba(232,184,75,.08);font-weight:700;}
+.ftable tr.total-row td{border-top:2px solid var(--gold);color:var(--gold);}
+.ftable tr.flour-row td{color:#a0c4ff;}
+.ftable tr.fiber-row td{color:var(--green);}
+.ftable tr.water-row td{color:#7dd3fc;}
+.ftable tr.salt-row td{color:var(--t2);}
+.ftable tr.ing-row td{color:var(--text);}
+.gram-num{font-weight:700;font-size:.85rem;}
+.qc-bar{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;padding:10px 14px;
+  background:rgba(232,184,75,.06);border:1px solid rgba(232,184,75,.25);border-radius:8px;}
+.qc-item{font-size:.9rem;}
+.qc-big{font-size:1.05rem;font-weight:800;}
+.qc-ok{color:var(--green);}
+.qc-warn{color:var(--yellow);}
+.qc-bad{color:var(--red);}
+
+/* ── Fiber type boxes ── */
+.fiber-box{border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;margin-bottom:7px;transition:all .2s;}
+.fiber-box.active{border-color:var(--green);}
+.fiber-box.disabled{opacity:.35;}
+.fiber-header{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.fiber-tag{display:inline-block;padding:1px 7px;border-radius:10px;font-size:.68rem;font-weight:700;}
+.tag-fiber{background:rgba(34,211,160,.15);color:var(--green);}
+.tag-prot{background:rgba(108,99,255,.15);color:var(--accent);}
+.tag-ph-warn{background:rgba(255,92,92,.15);color:var(--red);}
+.tag-ph-ok{background:rgba(34,211,160,.15);color:var(--green);}
+
+/* ── Nutrition table ── */
+.nutr-table{width:100%;border-collapse:collapse;font-size:.76rem;margin-top:7px;}
+.nutr-table th{background:#1e2235;padding:5px 7px;text-align:left;font-weight:600;font-size:.7rem;color:var(--t2);}
+.nutr-table td{padding:4px 7px;border-bottom:1px solid var(--border);}
+.nutr-table tr:last-child td{border-bottom:none;}
+
+/* ── Metrics ── */
+.mrow{display:flex;justify-content:space-between;align-items:center;
+  padding:6px 0;border-bottom:1px solid var(--border);font-size:.82rem;}
+.mrow:last-child{border-bottom:none;}
+.mval{font-weight:700;}
+.big{font-size:1.25rem;font-weight:800;}
+.xl{font-size:1.6rem;font-weight:900;}
+.green{color:var(--green);}
+.red{color:var(--red);}
+.yellow{color:var(--yellow);}
+
+/* ── Fee bar ── */
+.fee-bar{display:flex;height:33px;border-radius:7px;overflow:hidden;margin:8px 0;}
+.fseg{display:flex;align-items:center;justify-content:center;font-size:.67rem;font-weight:700;
+  transition:width .3s;overflow:hidden;white-space:nowrap;}
+
+/* ── Protein bar ── */
+.prot-wrap{height:22px;background:var(--border);border-radius:11px;overflow:hidden;margin:6px 0 3px;}
+.prot-fill{height:100%;border-radius:11px;transition:width .3s,background .3s;}
+
+/* ── Sauce buttons ── */
+.sauce-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;}
+.sbtn{padding:4px 9px;border-radius:16px;border:1.5px solid var(--border);
+  background:transparent;color:var(--t2);cursor:pointer;font-size:.72rem;font-weight:600;font-family:inherit;transition:all .18s;}
+.sbtn.active{border-color:var(--accent);background:rgba(108,99,255,.18);color:var(--text);}
+
+/* ── Alert ── */
+.alert{border-radius:8px;padding:8px 11px;font-size:.79rem;line-height:1.65;margin-top:8px;}
+.alert-red{background:rgba(255,92,92,.1);border:1px solid rgba(255,92,92,.35);}
+.alert-yellow{background:rgba(255,217,61,.1);border:1px solid rgba(255,217,61,.35);}
+.alert-green{background:rgba(34,211,160,.1);border:1px solid rgba(34,211,160,.35);}
+
+/* ── Number input ── */
+input[type=number]{background:var(--card2);border:1.5px solid var(--border);border-radius:6px;
+  color:var(--text);padding:3px 6px;width:65px;font-size:.84rem;text-align:center;font-family:inherit;outline:none;}
+input[type=number]:focus{border-color:var(--accent);}
+.inline-f{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+.inline-f .lbl{font-size:.79rem;color:var(--t2);flex:1;}
+
+/* ── Flour selector ── */
+.flour-select{background:var(--card2);border:1.5px solid var(--border);border-radius:7px;
+  color:var(--text);padding:4px 8px;font-size:.8rem;font-family:inherit;outline:none;cursor:pointer;width:100%;}
+.flour-select:focus{border-color:var(--gold);}
+
+/* ── 3-price cards ── */
+.price3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px;}
+.p3card{background:var(--card2);border-radius:8px;padding:10px;text-align:center;
+  border:1.5px solid var(--border);transition:border-color .3s;}
+.p3card.hl{border-color:var(--accent);}
+.p3lbl{font-size:.68rem;color:var(--t2);margin-bottom:3px;}
+.p3num{font-size:1.25rem;font-weight:800;}
+.p3st{font-size:.67rem;margin-top:3px;}
+
+/* ── Legend ── */
+.legend{display:flex;gap:8px;flex-wrap:wrap;font-size:.68rem;margin-bottom:3px;}
+.ldot{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:2px;}
+
+/* ══════ PAGE 2 ══════ */
+#page2{max-width:860px;margin:0 auto;}
+.doc-card{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:26px 28px;line-height:1.85;}
+.doc-card h2{font-size:1.08rem;font-weight:800;color:var(--accent);margin:20px 0 9px;border-left:3px solid var(--accent);padding-left:9px;}
+.doc-card h3{font-size:.96rem;font-weight:700;color:var(--a2);margin:16px 0 7px;}
+.doc-card p{font-size:.86rem;margin-bottom:9px;}
+.doc-card ul{padding-left:18px;margin-bottom:9px;}
+.doc-card li{font-size:.84rem;margin-bottom:4px;}
+.doc-card .math{font-style:italic;color:var(--yellow);}
+.doc-card .chem{font-family:monospace;color:var(--green);font-size:.88rem;}
+.sop-block{background:#0a0c14;border:1px solid var(--border);border-radius:7px;
+  padding:13px 16px;font-family:monospace;font-size:.78rem;line-height:1.7;color:#a8d8a8;margin:10px 0;white-space:pre-wrap;}
+.doc-card .tag-label{display:inline-block;padding:1px 7px;border-radius:10px;font-size:.7rem;font-weight:700;
+  background:rgba(34,211,160,.15);color:var(--green);margin-left:5px;}
+.callout{background:rgba(108,99,255,.1);border:1px solid rgba(108,99,255,.3);border-radius:8px;padding:11px 14px;margin:10px 0;font-size:.83rem;}
+.danger-callout{background:rgba(255,92,92,.1);border:1px solid rgba(255,92,92,.35);border-radius:8px;padding:11px 14px;margin:10px 0;font-size:.83rem;}
+.compare-table{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:7px;}
+.compare-table th{background:#1b1e2e;padding:7px 9px;text-align:left;font-weight:600;color:var(--t2);}
+.compare-table td{padding:6px 9px;border-bottom:1px solid var(--border);}
+
+@media(max-width:800px){
+  .two-col{grid-template-columns:1fr;}
+  .price3{grid-template-columns:repeat(3,1fr);}
+  .doc-card{padding:16px 14px;}
+  .ing-sliders{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<div class="hdr">
+  <h1>🍜 NoodleNoodle 高蛋白纖維麵</h1>
+  <p class="subtitle">創業決策系統 v4 · 配方 × 成本 × 定價 × 技術</p>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchPage(1)">📊 決策看板</button>
+    <button class="tab-btn" onclick="switchPage(2)">🔬 技術文件</button>
+    <button class="tab-btn" onclick="switchPage(3)">📣 行銷文件</button>
+    <button class="export-btn" onclick="exportExcel()">⬇ 匯出 Excel</button>
+  </div>
+</div>
+
+<!-- ══════════════════════ PAGE 1 ══════════════════════ -->
+<div id="page1">
+
+<!-- Board sub-tabs -->
+<div class="board-tabs">
+  <button class="board-tab-btn b1 active" onclick="switchBoard(1)">📦 看板1 · 風味麵（含醬包）</button>
+  <button class="board-tab-btn b2" onclick="switchBoard(2)">🍜 看板2 · 純麵6包組（無醬包）</button>
+</div>
+
+<!-- ① 看板1 定價分析 -->
+<div id="board1-pricing">
+<div class="card-full">
+  <div class="card-title">📈 定價分析 — 蝦皮電商通路</div>
+  <div class="two-col" style="gap:14px;">
+    <div>
+      <div class="sec-lbl">每包售價設定</div>
+      <div class="sg">
+        <div class="sl"><span class="sn">💵 建議售價</span>
+          <span class="sv" id="sv-price" style="font-size:1.15rem;color:var(--a2);">80 元</span></div>
+        <input type="range" id="sell-price" min="30" max="200" value="80" step="5" oninput="calc()">
+      </div>
+      <div class="sec-lbl">通路費用（勾選 = 計入）</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;">
+        <label class="ck-row">
+          <input type="checkbox" id="ck-shopee" checked onchange="calc()">
+          <span class="ck-label">蝦皮抽成 <strong>12.5%</strong>
+            <span id="fee-shopee-amt" style="color:var(--a2);margin-left:4px;"></span></span>
+        </label>
+        <label class="ck-row">
+          <input type="checkbox" id="ck-ads" checked onchange="calc()">
+          <span class="ck-label">廣告費 <strong>22%</strong>
+            <span id="fee-ads-amt" style="color:#6c63ff;margin-left:4px;"></span></span>
+        </label>
+        <div class="ck-row" style="opacity:.5;">
+          <input type="checkbox" checked disabled>
+          <span class="ck-label">營業稅 <strong>5%（內稅·固定）</strong>
+            <span id="fee-tax-amt" style="color:var(--yellow);margin-left:4px;"></span></span>
+        </div>
+      </div>
+      <div class="legend">
+        <span><span class="ldot" style="background:#ff5c5c;"></span>成本</span>
+        <span><span class="ldot" style="background:#f7971e;"></span>蝦皮</span>
+        <span><span class="ldot" style="background:#ffd93d;"></span>稅</span>
+        <span><span class="ldot" style="background:#6c63ff;"></span>廣告</span>
+        <span><span class="ldot" style="background:#22d3a0;"></span>淨利</span>
+      </div>
+      <div class="fee-bar">
+        <div id="fb-cost"   class="fseg" style="background:#ff5c5c;color:rgba(0,0,0,.7);"></div>
+        <div id="fb-shop"   class="fseg" style="background:#f7971e;color:rgba(0,0,0,.7);"></div>
+        <div id="fb-tax"    class="fseg" style="background:#ffd93d;color:rgba(0,0,0,.7);"></div>
+        <div id="fb-ads"    class="fseg" style="background:#6c63ff;color:#fff;"></div>
+        <div id="fb-profit" class="fseg" style="background:#22d3a0;color:rgba(0,0,0,.7);"></div>
+      </div>
+    </div>
+    <div>
+      <div class="sec-lbl">費用拆解 / 獲利</div>
+      <div class="sub-panel">
+        <div class="mrow"><span>扣費後現金回流</span><span class="mval green" id="net-cash">--</span></div>
+        <div class="mrow"><span>每包總成本</span><span class="mval red" id="pr-cost">--</span></div>
+        <div class="mrow" style="border-top:2px solid var(--border);padding-top:6px;margin-top:2px;">
+          <span style="font-weight:700;">🎯 每包淨利潤</span>
+          <span class="mval xl" id="net-profit">--</span>
+        </div>
+        <div class="mrow"><span>淨利率</span><span class="mval" id="profit-rate">--</span></div>
+        <div class="mrow"><span>損益平衡最低售價</span><span class="mval yellow" id="breakeven">--</span></div>
+      </div>
+      <div class="sec-lbl" style="margin-top:10px;">三個典型售價比較</div>
+      <div class="price3">
+        <div class="p3card" id="pc50"><div class="p3lbl">售價 50 元</div><div class="p3num" id="p50n">--</div><div class="p3st" id="p50s"></div></div>
+        <div class="p3card" id="pc60"><div class="p3lbl">售價 60 元</div><div class="p3num" id="p60n">--</div><div class="p3st" id="p60s"></div></div>
+        <div class="p3card" id="pc80"><div class="p3lbl">售價 80 元</div><div class="p3num" id="p80n">--</div><div class="p3st" id="p80s"></div></div>
+      </div>
+      <div id="advice-box"></div>
+    </div>
+  </div>
+</div>
+</div><!-- /board1-pricing -->
+
+<!-- ① 看板2 定價分析 -->
+<div id="board2-pricing" style="display:none;">
+<div class="card-full" style="border-color:rgba(247,151,30,.35);">
+  <div class="card-title" style="color:var(--a2);">📈 定價分析 — 純麵6包組（無醬包）</div>
+  <div style="font-size:.73rem;color:var(--t2);margin:-4px 0 12px;padding:6px 10px;background:rgba(247,151,30,.08);border-radius:6px;border:1px solid rgba(247,151,30,.2);">
+    📦 6包/組 × 6束/包 = <strong style="color:var(--a2);">36人份</strong> · 預售整組定價計算
+  </div>
+  <div class="two-col" style="gap:14px;">
+    <div>
+      <div class="sec-lbl">每組售價設定</div>
+      <div class="sg">
+        <div class="sl"><span class="sn">💵 預售組合售價</span>
+          <span class="sv" id="sv-bundle-price" style="font-size:1.15rem;color:var(--a2);">1,299 元</span></div>
+        <input type="range" id="bundle-price" min="500" max="3500" value="1299" step="50" oninput="calc()">
+      </div>
+      <div class="sec-lbl">通路費用（勾選 = 計入）</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;">
+        <label class="ck-row">
+          <input type="checkbox" id="ck-shopee-b2" checked onchange="calc()">
+          <span class="ck-label">蝦皮抽成 <strong>12.5%</strong>
+            <span id="fee-shopee-b2" style="color:var(--a2);margin-left:4px;"></span></span>
+        </label>
+        <label class="ck-row">
+          <input type="checkbox" id="ck-ads-b2" checked onchange="calc()">
+          <span class="ck-label">廣告費 <strong>22%</strong>
+            <span id="fee-ads-b2" style="color:#6c63ff;margin-left:4px;"></span></span>
+        </label>
+        <div class="ck-row" style="opacity:.5;">
+          <input type="checkbox" checked disabled>
+          <span class="ck-label">營業稅 <strong>5%（內稅·固定）</strong>
+            <span id="fee-tax-b2" style="color:var(--yellow);margin-left:4px;"></span></span>
+        </div>
+      </div>
+      <div class="legend">
+        <span><span class="ldot" style="background:#ff5c5c;"></span>成本</span>
+        <span><span class="ldot" style="background:#f7971e;"></span>蝦皮</span>
+        <span><span class="ldot" style="background:#ffd93d;"></span>稅</span>
+        <span><span class="ldot" style="background:#6c63ff;"></span>廣告</span>
+        <span><span class="ldot" style="background:#22d3a0;"></span>淨利</span>
+      </div>
+      <div class="fee-bar">
+        <div id="fb2-cost"   class="fseg" style="background:#ff5c5c;color:rgba(0,0,0,.7);"></div>
+        <div id="fb2-shop"   class="fseg" style="background:#f7971e;color:rgba(0,0,0,.7);"></div>
+        <div id="fb2-tax"    class="fseg" style="background:#ffd93d;color:rgba(0,0,0,.7);"></div>
+        <div id="fb2-ads"    class="fseg" style="background:#6c63ff;color:#fff;"></div>
+        <div id="fb2-profit" class="fseg" style="background:#22d3a0;color:rgba(0,0,0,.7);"></div>
+      </div>
+    </div>
+    <div>
+      <div class="sec-lbl">費用拆解 / 獲利（整組）</div>
+      <div class="sub-panel">
+        <div class="mrow"><span>組合扣費後現金回流</span><span class="mval green" id="b2-net-cash">--</span></div>
+        <div class="mrow"><span>6包組合總成本（無醬）</span><span class="mval red" id="b2-bundle-cost">--</span></div>
+        <div class="mrow" style="border-top:2px solid var(--border);padding-top:6px;margin-top:2px;">
+          <span style="font-weight:700;">🎯 整組淨利潤</span>
+          <span class="mval xl" id="b2-net-profit">--</span>
+        </div>
+        <div class="mrow"><span>淨利率</span><span class="mval" id="b2-profit-rate">--</span></div>
+        <div class="mrow"><span>等效每包售價</span><span class="mval yellow" id="b2-per-pack">--</span></div>
+        <div class="mrow"><span>每人份售價</span><span class="mval" id="b2-per-serving">--</span></div>
+        <div class="mrow"><span>損益平衡最低組合售價</span><span class="mval yellow" id="b2-breakeven">--</span></div>
+      </div>
+      <div class="sec-lbl" style="margin-top:10px;">三個典型組合售價比較</div>
+      <div class="price3">
+        <div class="p3card" id="b2pc1"><div class="p3lbl">組合 1,199 元</div><div class="p3num" id="b2p1n">--</div><div class="p3st" id="b2p1s"></div></div>
+        <div class="p3card" id="b2pc2"><div class="p3lbl">組合 1,499 元</div><div class="p3num" id="b2p2n">--</div><div class="p3st" id="b2p2s"></div></div>
+        <div class="p3card" id="b2pc3"><div class="p3lbl">組合 1,799 元</div><div class="p3num" id="b2p3n">--</div><div class="p3st" id="b2p3s"></div></div>
+      </div>
+      <div id="b2-advice-box"></div>
+    </div>
+  </div>
+</div>
+</div><!-- /board2-pricing -->
+
+<!-- ② 配方總表（顯眼金框） -->
+<div class="formula-card">
+  <div class="formula-title">⚖️ 產線標準配方總表
+    <span style="font-size:.75rem;font-weight:400;color:var(--t2);margin-left:8px;">生麵糰基準 · 全自動質量平衡求解</span>
+  </div>
+
+  <div class="two-col" style="gap:16px;align-items:start;">
+    <!-- Left: formula controls -->
+    <div>
+      <div class="sec-lbl">麵粉規格</div>
+      <div style="margin-bottom:8px;">
+        <select class="flour-select" id="flour-type" onchange="onFlourTypeChange()">
+          <option value="12">台灣大中筋麵粉 (蛋白質 12.0%)</option>
+          <option value="13.5">台灣高筋麵粉 (蛋白質 13.5%)</option>
+          <option value="14">日本高筋麵粉 (蛋白質 14.0%)</option>
+          <option value="13.8">美國高筋麵粉 (蛋白質 13.8%)</option>
+          <option value="custom">自訂蛋白質%</option>
+        </select>
+      </div>
+      <div id="custom-flour-row" style="display:none;margin-bottom:8px;">
+        <div class="sg">
+          <div class="sl"><span class="sn">自訂麵粉蛋白質%</span><span class="sv" id="sv-flour-p-f">12.0%</span></div>
+          <input type="range" id="flour-p-f" min="8" max="16" value="12" step="0.5" oninput="calc()">
+        </div>
+      </div>
+
+      <div class="sec-lbl">配方目標</div>
+      <div class="sg">
+        <div class="sl"><span class="sn">🎯 蛋白質目標（占濕麵糰總重%）</span><span class="sv" id="sv-prot-target">23.5%</span></div>
+        <input type="range" id="prot-target" min="15" max="35" value="23.5" step="0.5" oninput="calc()">
+      </div>
+      <div style="font-size:.65rem;color:var(--t2);margin:-4px 0 8px;line-height:1.5;padding:5px 8px;background:rgba(108,99,255,.07);border-radius:5px;">
+        💡 「濕基」= 含水麵糰中的蛋白質%。乾麵條蛋白質 ≈ 此值 × 1.3–1.5倍（水蒸發後濃縮）。<br>
+        例：濕基 23% → 乾麵條約 30–35g/100g（配方總表右側可見實際換算）
+      </div>
+      <!-- 蒸發濃縮倍數 + 預估乾麵蛋白 -->
+      <div class="sg" style="margin-bottom:4px;">
+        <div class="sl"><span class="sn">🌡 水蒸發後濃縮倍數</span><span class="sv" id="sv-evap-factor">1.30×</span></div>
+        <input type="range" id="evap-factor" min="1.3" max="1.5" value="1.3" step="0.05" oninput="calc()">
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 11px;
+        background:rgba(108,99,255,.12);border-radius:7px;border:1px solid rgba(108,99,255,.3);margin-bottom:9px;">
+        <span style="font-size:.78rem;color:var(--t2);">💧 預估乾麵蛋白質含量</span>
+        <span id="sv-dry-prot" style="font-size:1.1rem;font-weight:900;color:var(--accent);">-- g/100g</span>
+      </div>
+
+      <div class="sg">
+        <div class="sl"><span class="sn">💧 加水比例 (佔乾料)</span><span class="sv" id="sv-water-ratio">54%</span></div>
+        <input type="range" id="water-ratio" min="40" max="80" value="54" step="1" oninput="calc()">
+      </div>
+
+      <div class="sec-lbl">🧂 鹽（佔麵粉%）</div>
+      <div class="sg">
+        <div class="sl"><span class="sn">鹽用量</span><span class="sv" id="sv-salt-f">1.0%</span></div>
+        <input type="range" id="salt-f" min="0" max="10" value="1" step="0.1" oninput="calc()">
+      </div>
+
+      <div class="inline-f">
+        <span class="lbl">批次麵粉量</span>
+        <input type="number" id="batch-flour" value="1000" min="100" max="5000" step="100" oninput="calc()">
+        <span style="font-size:.78rem;color:var(--t2);">g</span>
+      </div>
+
+    </div><!-- /left controls -->
+
+    <!-- Right: formula table -->
+    <div>
+      <div id="formula-error" style="display:none;" class="alert alert-red">
+        ⚠ 配方無解：目前蛋白質目標過高或預拌粉蛋白質不足，請調整目標或啟用更多高蛋白成分。
+      </div>
+      <div id="formula-neg" style="display:none;" class="alert alert-yellow">
+        ⚠ 預拌粉求解量為負值：麵粉蛋白質已超過目標，請降低蛋白質目標或選用較低筋度麵粉。
+      </div>
+
+      <table class="ftable" id="formula-table">
+        <thead>
+          <tr>
+            <th>原料名稱</th>
+            <th>用量 (g)</th>
+            <th>烘焙 %</th>
+            <th>總配方 %</th>
+            <th>蛋白貢獻 g</th>
+            <th>纖維貢獻 g</th>
+          </tr>
+        </thead>
+        <tbody id="formula-tbody"></tbody>
+      </table>
+
+      <div id="qc-bar" style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+        <div id="qc-prot" class="qc-item" style="background:rgba(232,184,75,.07);border:1px solid rgba(232,184,75,.25);
+          border-radius:8px;padding:8px 12px;display:flex;flex-direction:column;gap:2px;">
+          <span style="font-size:.65rem;color:var(--t2);font-weight:600;text-transform:uppercase;letter-spacing:.7px;">蛋白質</span>
+          <span class="qc-big" id="qc-prot-val">--</span>
+        </div>
+        <div id="qc-fiber" class="qc-item" style="background:rgba(34,211,160,.07);border:1px solid rgba(34,211,160,.2);
+          border-radius:8px;padding:8px 12px;display:flex;flex-direction:column;gap:2px;">
+          <span style="font-size:.65rem;color:var(--t2);font-weight:600;text-transform:uppercase;letter-spacing:.7px;">膳食纖維</span>
+          <span class="qc-big" id="qc-fiber-val">--</span>
+        </div>
+        <div id="qc-sodium" class="qc-item" style="background:rgba(255,217,61,.06);border:1px solid rgba(255,217,61,.2);
+          border-radius:8px;padding:8px 12px;display:flex;flex-direction:column;gap:2px;">
+          <span style="font-size:.65rem;color:var(--t2);font-weight:600;text-transform:uppercase;letter-spacing:.7px;">鈉 (乾麵/100g)</span>
+          <span class="qc-big" id="qc-sodium-val">--</span>
+        </div>
+        <div id="qc-wet" class="qc-item" style="background:rgba(108,99,255,.07);border:1px solid rgba(108,99,255,.2);
+          border-radius:8px;padding:8px 12px;display:flex;flex-direction:column;gap:2px;">
+          <span style="font-size:.65rem;color:var(--t2);font-weight:600;text-transform:uppercase;letter-spacing:.7px;">濕麵糰/批</span>
+          <span class="qc-big" id="qc-wet-val">--</span>
+        </div>
+        <div id="qc-hydration" class="qc-item" style="grid-column:1/-1;background:rgba(125,211,252,.07);
+          border:1px solid rgba(125,211,252,.2);border-radius:8px;padding:8px 12px;">💧 加水: --</div>
+      </div>
+
+      <!-- 營養標示 — 緊接配方總表 -->
+      <div style="margin-top:12px;">
+        <div class="sec-lbl">📋 營養標示估算（源自配方總表）</div>
+        <div class="sub-panel" style="padding:0;overflow:hidden;">
+          <table class="nutr-table">
+            <thead>
+              <tr><th>營養素</th><th>每100g估算</th><th>每份(80g)</th><th>參考標示</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>熱量 kcal</td><td id="nt-cal">--</td><td id="nt-cal8">--</td><td style="color:var(--t2);">353.8</td></tr>
+              <tr><td>蛋白質 g</td><td id="nt-prot">--</td><td id="nt-prot8">--</td><td style="color:var(--t2);">23.1</td></tr>
+              <tr><td>脂肪 g</td><td id="nt-fat">--</td><td id="nt-fat8">--</td><td style="color:var(--t2);">4.2</td></tr>
+              <tr><td>碳水 g</td><td id="nt-carb">--</td><td id="nt-carb8">--</td><td style="color:var(--t2);">57.8</td></tr>
+              <tr><td style="padding-left:14px;color:var(--t2);">糖 g</td><td id="nt-sugar">--</td><td id="nt-sugar8">--</td><td style="color:var(--t2);">2.2</td></tr>
+              <tr><td style="padding-left:14px;color:var(--t2);">膳食纖維 g</td><td id="nt-fiber">--</td><td id="nt-fiber8">--</td><td style="color:var(--t2);">3.8</td></tr>
+              <tr><td>鈉 mg</td><td id="nt-sodium">--</td><td id="nt-sodium8">--</td><td style="color:var(--t2);">316.4</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:.62rem;color:var(--t2);margin-top:4px;line-height:1.5;">
+          ※ 基於濕麵糰配方換算為乾麵條（含水率12%）。實際數值需送第三方機構檢驗。
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- /formula-card -->
+
+<!-- ③ 兩欄：配方設計 + 成本結構 -->
+<div class="two-col">
+
+  <!-- ═══ 配方設計 ═══ -->
+  <div class="card">
+    <div class="card-title">🧪 配方設計 — 預拌粉（決定成本比例）</div>
+
+    <div class="sec-lbl">成分比例（不需加總到100%，系統自動正規化）</div>
+    <div class="ratio-bar">
+      <div id="rb-wheat" class="rseg" style="background:#6c63ff;"></div>
+      <div id="rb-soy"   class="rseg" style="background:#22d3a0;"></div>
+      <div id="rb-black" class="rseg" style="background:#f7971e;"></div>
+      <div id="rb-buck"  class="rseg" style="background:#ff5c5c;"></div>
+      <div id="rb-pea"      class="rseg" style="background:#ffd93d;"></div>
+      <div id="rb-collagen" class="rseg" style="background:#b478ff;"></div>
+      <div id="rb-other"    class="rseg" style="background:#9aa0b4;"></div>
+      <div id="rb-rest"     class="rseg" style="background:#2d3150;"></div>
+    </div>
+    <div id="ratio-total" style="font-size:.73rem;text-align:right;margin-bottom:7px;"></div>
+
+    <!-- 小麥蛋白 -->
+    <div class="ing-block" id="blk-wheat">
+      <div class="ing-header">
+        <input type="checkbox" id="en-wheat" checked onchange="toggleIng('wheat')">
+        <span>🟣</span>
+        <label for="en-wheat" style="font-size:.83rem;font-weight:600;cursor:pointer;flex:1;">小麥蛋白 (IWP)</label>
+        <span style="font-size:.68rem;color:var(--t2);">蛋白82.8%</span>
+      </div>
+      <div class="ing-sliders">
+        <div class="sg" style="margin:0;">
+          <div class="sl"><span class="sn">比例</span><span class="sv" id="sv-wheat-r">60%</span></div>
+          <input type="range" id="wheat-r" min="0" max="90" value="60" step="0.5" oninput="calc()">
+        </div>
+        <div class="sg" style="margin:0;">
+          <div class="sl"><span class="sn">單價</span><span class="sv" id="sv-wheat-p">80元/kg</span></div>
+          <input type="range" id="wheat-p" min="70" max="200" value="80" step="1" oninput="calc()" class="price-sl">
+        </div>
+      </div>
+    </div>
+
+    <!-- 熟黃豆粉 -->
+    <div class="ing-block" id="blk-soy">
+      <div class="ing-header">
+        <input type="checkbox" id="en-soy" checked onchange="toggleIng('soy')">
+        <span>🟢</span>
+        <label for="en-soy" style="font-size:.83rem;font-weight:600;cursor:pointer;flex:1;">炒熟黃豆粉</label>
+        <span style="font-size:.68rem;color:var(--t2);">蛋白36%</span>
+      </div>
+      <div class="ing-sliders">
+        <div class="sg" style="margin:0;">
+          <div class="sl"><span class="sn">比例</span><span class="sv" id="sv-soy-r">30%</span></div>
+          <input type="range" id="soy-r" min="0" max="90" value="30" step="1" oninput="calc()">
+        </div>
+        <div class="sg" style="margin:0;">
+          <div class="sl"><span class="sn">單價</span><span class="sv" id="sv-soy-p">80元/kg</span></div>
+          <input type="range" id="soy-p" min="40" max="120" value="80" step="1" oninput="calc()" class="price-sl">
+        </div>
+      </div>
+    </div>
+
+    <!-- 黑豆粉 -->
+    <div class="ing-block" id="blk-black">
+      <div class="ing-header">
+        <input type="checkbox" id="en-black" checked onchange="toggleIng('black')">
+        <span>🟠</span>
+        <label for="en-black" style="font-size:.83rem;font-weight:600;cursor:pointer;flex:1;">黑豆粉</label>
+        <span style="font-size:.68rem;color:var(--t2);">蛋白34%</span>
+      </div>
+      <div class="ing-sliders">
+        <div class="sg" style="margin:0;">
+          <div class="sl"><span class="sn">比例</span><span class="sv" id="sv-black-r">10%</span></div>
+          <input type="range" id="black-r" min="0" max="90" value="10" step="1" oninput="calc()">
+        </div>
+        <div class="sg" style="margin:0;">
+          <div class="sl"><span class="sn">單價</span><span class="sv" id="sv-black-p">80元/kg</span></div>
+          <input type="range" id="black-p" min="40" max="120" value="80" step="1" oninput="calc()" class="price-sl">
+        </div>
+      </div>
+    </div>
+
+    <!-- 膠原蛋白 Verisol P -->
+    <div class="ing-block disabled" id="blk-collagen">
+      <div class="ing-header">
+        <input type="checkbox" id="en-collagen" onchange="toggleIng('collagen')">
+        <span>🧬</span>
+        <label for="en-collagen" style="font-size:.83rem;font-weight:600;cursor:pointer;flex:1;color:#b478ff;">膠原蛋白 Verisol P</label>
+        <span style="font-size:.68rem;color:#b478ff;">蛋白91%</span>
+      </div>
+      <div style="font-size:.65rem;color:var(--t2);padding:2px 0 6px;">豬水解膠原蛋白肽 · Avg 300 Dal. · 易溶・促進皮膚彈性</div>
+      <div class="ing-sliders">
+        <div class="sg" style="margin:0;">
+          <div class="sl"><span class="sn">比例</span><span class="sv" id="sv-collagen-r">0%</span></div>
+          <input type="range" id="collagen-r" min="0" max="20" value="0" step="0.5" oninput="calc()" disabled>
+        </div>
+        <div class="sg" style="margin:0;">
+          <div class="sl"><span class="sn">單價</span><span class="sv" id="sv-collagen-p">800元/kg</span></div>
+          <input type="range" id="collagen-p" min="700" max="900" value="800" step="10" oninput="calc()" disabled class="price-sl">
+        </div>
+      </div>
+    </div>
+
+    <!-- 熟蕎麥粉 -->
+    <div class="ing-block disabled" id="blk-buck">
+      <div class="ing-header">
+        <input type="checkbox" id="en-buck" onchange="toggleIng('buck')">
+        <span>🔴</span>
+        <label for="en-buck" style="font-size:.83rem;font-weight:600;cursor:pointer;flex:1;">熟蕎麥粉</label>
+        <span style="font-size:.68rem;color:var(--t2);">蛋白13%</span>
+      </div>
+      <div class="ing-sliders">
+        <div class="sg" style="margin:0;">
+          <div class="sl"><span class="sn">比例</span><span class="sv" id="sv-buck-r">0%</span></div>
+          <input type="range" id="buck-r" min="0" max="10" value="0" step="1" oninput="calc()" disabled>
+        </div>
+        <div class="sg" style="margin:0;">
+          <div class="sl"><span class="sn">單價</span><span class="sv" id="sv-buck-p">200元/kg</span></div>
+          <input type="range" id="buck-p" min="40" max="400" value="200" step="5" oninput="calc()" disabled class="price-sl">
+        </div>
+      </div>
+    </div>
+
+    <!-- 豌豆粉 -->
+    <div class="ing-block disabled" id="blk-pea">
+      <div class="ing-header">
+        <input type="checkbox" id="en-pea" onchange="toggleIng('pea')">
+        <span>🟡</span>
+        <label for="en-pea" style="font-size:.83rem;font-weight:600;cursor:pointer;flex:1;">豌豆粉</label>
+        <span style="font-size:.68rem;color:var(--t2);">蛋白22%</span>
+      </div>
+      <div class="ing-sliders">
+        <div class="sg" style="margin:0;">
+          <div class="sl"><span class="sn">比例</span><span class="sv" id="sv-pea-r">0%</span></div>
+          <input type="range" id="pea-r" min="0" max="90" value="0" step="1" oninput="calc()" disabled>
+        </div>
+        <div class="sg" style="margin:0;">
+          <div class="sl"><span class="sn">單價</span><span class="sv" id="sv-pea-p">80元/kg</span></div>
+          <input type="range" id="pea-p" min="40" max="150" value="80" step="1" oninput="calc()" disabled class="price-sl">
+        </div>
+      </div>
+    </div>
+
+    <!-- 其他 -->
+    <div class="ing-block disabled" id="blk-other">
+      <div class="ing-header">
+        <input type="checkbox" id="en-other" onchange="toggleIng('other')">
+        <span>⚪</span>
+        <input type="text" class="ing-name-input" id="other-name" value="自訂成分" oninput="calc()">
+      </div>
+      <div class="ing-sliders">
+        <div class="sg" style="margin:0;">
+          <div class="sl"><span class="sn">比例</span><span class="sv" id="sv-other-r">0%</span></div>
+          <input type="range" id="other-r" min="0" max="90" value="0" step="1" oninput="calc()" disabled>
+        </div>
+        <div class="sg" style="margin:0;">
+          <div class="sl"><span class="sn">單價</span><span class="sv" id="sv-other-p">80元/kg</span></div>
+          <input type="range" id="other-p" min="10" max="500" value="80" step="5" oninput="calc()" disabled class="price-sl">
+        </div>
+      </div>
+      <div class="sg" style="margin-top:5px;">
+        <div class="sl"><span class="sn">蛋白質% (自訂)</span><span class="sv" id="sv-other-prot">15%</span></div>
+        <input type="range" id="other-prot" min="0" max="85" value="15" step="1" oninput="calc()" disabled>
+      </div>
+    </div>
+
+
+    <div class="divider" style="margin-top:4px;"></div>
+
+    <!-- 膳食纖維來源 — 移至預拌粉區 -->
+    <div class="sec-lbl">膳食纖維添加物（可複選・獨立計價）</div>
+
+    <!-- 312F -->
+    <div class="fiber-box active" id="fbox-312f">
+      <div class="fiber-header">
+        <input type="checkbox" id="en-312f" checked onchange="toggleFiber('312f')">
+        <label for="en-312f" style="font-size:.83rem;font-weight:700;cursor:pointer;flex:1;">JRS VITACEL 312F</label>
+        <span class="fiber-tag tag-fiber">纖維 88%</span>
+        <span class="fiber-tag tag-prot">蛋白 5%</span>
+        <span class="fiber-tag tag-ph-warn">pH 4.6⚠</span>
+      </div>
+      <div class="ing-sliders">
+        <div class="sg" style="margin:0;">
+          <div class="sl"><span class="sn">用量（g/批次麵粉）</span><span class="sv" id="sv-312f-amt">24.0 g</span></div>
+          <input type="range" id="amt-312f" min="0" max="120" value="24" step="0.5" oninput="calc()">
+        </div>
+        <div class="sg" style="margin:0;">
+          <div class="sl"><span class="sn">單價</span><span class="sv" id="sv-312f-p">380 元/kg</span></div>
+          <input type="range" id="312f-p" min="180" max="580" value="380" step="10" oninput="calc()" class="price-sl">
+        </div>
+      </div>
+    </div>
+
+    <!-- 7000 -->
+    <div class="fiber-box active" id="fbox-7000">
+      <div class="fiber-header">
+        <input type="checkbox" id="en-7000" checked onchange="toggleFiber('7000')">
+        <label for="en-7000" style="font-size:.83rem;font-weight:700;cursor:pointer;flex:1;">CEAMSA 7000</label>
+        <span class="fiber-tag tag-fiber">纖維 88%</span>
+        <span class="fiber-tag tag-prot">蛋白 0.5%</span>
+        <span class="fiber-tag tag-ph-ok">pH 5.5–6.5✓</span>
+      </div>
+      <div style="font-size:.65rem;color:var(--t2);margin:-2px 0 5px;">細膩纖維補充 · 超細(60μm) · 壓延難度低 · 口感順滑</div>
+      <div class="ing-sliders">
+        <div class="sg" style="margin:0;">
+          <div class="sl"><span class="sn">用量（g/批次麵粉）</span><span class="sv" id="sv-7000-amt">24.0 g</span></div>
+          <input type="range" id="amt-7000" min="0" max="120" value="24" step="0.5" oninput="calc()">
+        </div>
+        <div class="sg" style="margin:0;">
+          <div class="sl"><span class="sn">單價</span><span class="sv" id="sv-7000-p">240 元/kg</span></div>
+          <input type="range" id="7000-p" min="40" max="440" value="240" step="10" oninput="calc()" class="price-sl">
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Protein result -->
+    <div class="sec-lbl">預拌粉蛋白質估算</div>
+    <div class="sub-panel">
+      <div style="display:flex;justify-content:space-between;font-size:.79rem;margin-bottom:3px;">
+        <span style="color:var(--t2);">預拌粉蛋白質%</span><span id="premix-prot" style="font-weight:700;">--</span>
+      </div>
+      <div class="prot-wrap"><div id="prot-fill" class="prot-fill"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:.85rem;font-weight:600;margin-top:5px;">
+        <span style="color:var(--t2);">預拌粉占麵條比例</span>
+        <span id="pm-ratio-disp" style="color:var(--a2);">--</span>
+      </div>
+      <div id="prot-status" style="font-size:.76rem;margin-top:4px;"></div>
+    </div>
+
+  </div><!-- /recipe card -->
+
+  <!-- ═══ 成本結構 ═══ -->
+  <div class="card">
+    <div class="card-title">💰 成本結構（每包單位成本）</div>
+
+    <div class="sec-lbl">代工費用</div>
+    <div class="sg">
+      <div class="sl"><span class="sn">🏭 麵塊代工費（每束）</span><span class="sv" id="sv-nd-mfg">10 元/束</span></div>
+      <input type="range" id="nd-mfg" min="3" max="20" value="10" step="0.5" oninput="calc()">
+    </div>
+    <div style="font-size:.65rem;color:var(--t2);margin:-4px 0 5px;padding:4px 8px;
+      background:rgba(108,99,255,.06);border-radius:5px;line-height:1.6;">
+      看板1（風味麵）= 單塊 × 1 = <strong style="color:var(--accent);" id="sv-nd-mfg-b1">10.0 元/包</strong>
+      &nbsp;｜&nbsp;
+      看板2（純麵組）= 束 ×
+      <input type="number" id="nd-bundles" value="6" min="1" max="20" step="1" oninput="calc()"
+        style="width:34px;background:var(--card2);border:1px solid var(--border);border-radius:4px;
+               color:var(--text);padding:1px 3px;font-size:.65rem;text-align:center;font-family:inherit;">
+      = <strong style="color:var(--a2);" id="sv-nd-mfg-pack">60.0 元/包</strong>
+    </div>
+    <div class="sg">
+      <div class="sl"><span class="sn">🏭 預拌粉代工費</span><span class="sv" id="sv-pm-mfg">50 元/kg</span></div>
+      <input type="range" id="pm-mfg" min="20" max="100" value="50" step="1" oninput="calc()">
+    </div>
+
+    <div class="sec-lbl">麵條規格</div>
+    <div class="inline-f">
+      <span class="lbl">每包乾麵條重量</span>
+      <input type="number" id="nd-weight" value="100" min="60" max="200" step="5" oninput="calc()">
+      <span style="font-size:.78rem;color:var(--t2);">g</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:7px 10px;background:rgba(108,99,255,.08);border-radius:6px;border:1px solid rgba(108,99,255,.2);">
+      <span style="font-size:.79rem;color:var(--t2);">預拌粉占乾麵條比例</span>
+      <span id="sv-pm-ratio" style="font-size:.88rem;font-weight:700;color:var(--accent);">35%</span>
+    </div>
+    <div style="font-size:.62rem;color:var(--t2);margin:-2px 0 8px;">⬆ 由配方總表自動計算，無需手動設定</div>
+    <!-- hidden slider kept for fallback when formula unsolved -->
+    <input type="range" id="pm-ratio" min="10" max="70" value="35" step="1" oninput="calc()" style="display:none;">
+    <div class="sg">
+      <div class="sl">
+        <span class="sn">⚙ 製程損耗率（Yield Loss）</span>
+        <span class="sv" id="sv-yield-loss" style="color:var(--yellow);">5%</span>
+      </div>
+      <input type="range" id="yield-loss" min="0" max="15" value="5" step="0.5" oninput="calc()">
+    </div>
+    <div style="font-size:.64rem;color:var(--t2);margin-bottom:6px;">頭尾料、壓延破邊、乾燥斷裂等，加計至食材與代工成本</div>
+
+    <div class="sec-lbl">包材費用</div>
+    <div class="sg">
+      <div class="sl"><span class="sn">📦 麵體包裝袋</span><span class="sv" id="sv-nd-bag">1.00 元</span></div>
+      <input type="range" id="nd-bag" min="0.2" max="1" value="1" step="0.05" oninput="calc()">
+    </div>
+    <label class="ck-row" style="margin-bottom:4px;">
+      <input type="checkbox" id="ck-sauce" checked onchange="$('sauce-sg').style.opacity=this.checked?'1':'.35';calc()">
+      <span class="ck-label">🫙 包含醬包（看板2預設不含）</span>
+    </label>
+    <div id="sauce-sg" class="sg">
+      <div class="sl"><span class="sn">醬料成本</span><span class="sv" id="sv-sauce">10 元</span></div>
+      <input type="range" id="sauce-cost" min="5" max="15" value="10" step="0.5" oninput="calc()">
+    </div>
+    <div class="sg">
+      <div class="sl"><span class="sn">📫 紙箱</span><span class="sv" id="sv-box">10 元/箱</span></div>
+      <input type="range" id="box-cost" min="10" max="50" value="10" step="1" oninput="calc()">
+    </div>
+    <div class="inline-f">
+      <span class="lbl">每箱裝入數量</span>
+      <input type="number" id="box-qty" value="12" min="1" max="60" step="1" oninput="calc()">
+      <span style="font-size:.78rem;color:var(--t2);">包/箱</span>
+    </div>
+
+    <div class="sec-lbl">醬料來源</div>
+    <div class="sauce-row">
+      <button class="sbtn active" id="s1" onclick="toggleSauce(1)">🇯🇵 白湯豚骨 40ml</button>
+      <button class="sbtn" id="s2" onclick="toggleSauce(2)">🇯🇵 醬油拉麵 40ml</button>
+      <button class="sbtn" id="s3" onclick="toggleSauce(3)">🇯🇵 蕎麥つゆ 25ml</button>
+      <button class="sbtn" id="stw" onclick="toggleSauce('tw')">🇹🇼 台灣製造</button>
+    </div>
+    <div style="font-size:.69rem;color:var(--yellow);margin-top:4px;">⚠ 日本原裝需加計關稅20–30%、運費、MOQ限制</div>
+
+    <div class="divider"></div>
+    <div class="sec-lbl">每包成本拆解</div>
+    <div class="sub-panel" style="border:1px solid rgba(108,99,255,.3);">
+      <div class="mrow"><span>預拌粉食材</span><span class="mval" id="c-ing">--</span></div>
+      <div class="mrow"><span>預拌粉代工</span><span class="mval" id="c-pm-mfg">--</span></div>
+      <div class="mrow"><span>麵塊代工</span><span class="mval" id="c-nd-mfg">--</span></div>
+      <div class="mrow"><span>麵體包裝袋</span><span class="mval" id="c-bag">--</span></div>
+      <div class="mrow"><span>醬料</span><span class="mval" id="c-sauce">--</span></div>
+      <div class="mrow"><span>紙箱分攤</span><span class="mval" id="c-box">--</span></div>
+      <div class="mrow"><span>纖維添加物</span><span class="mval" id="c-fiber">--</span></div>
+      <div class="mrow" style="border-top:2px solid var(--accent);padding-top:6px;margin-top:2px;">
+        <span style="font-weight:700;">📦 每包總成本</span>
+        <span class="mval xl red" id="c-total">--</span>
+      </div>
+    </div>
+    <!-- Board 2 bundle cost summary -->
+    <div id="b2-cost-card" style="display:none;margin-top:9px;" class="sub-panel">
+      <div style="font-size:.68rem;font-weight:700;color:var(--a2);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;">📦 看板2 · 6包組合成本</div>
+      <div class="mrow"><span>每包成本（無醬）</span><span class="mval red" id="b2-pack-cost">--</span></div>
+      <div class="mrow" style="border-top:2px solid rgba(247,151,30,.4);padding-top:6px;margin-top:2px;">
+        <span style="font-weight:700;">6包組合總成本</span>
+        <span class="mval xl" style="color:var(--a2);" id="b2-bundle-total-cost">--</span>
+      </div>
+    </div>
+  </div>
+</div><!-- /two-col -->
+</div><!-- /page1 -->
+
+<!-- ══════════════════════ PAGE 2 ══════════════════════ -->
+<div id="page2" style="display:none;">
+<div class="doc-card">
+  <h2 style="border-color:var(--red);color:var(--red);font-size:1.15rem;margin-top:0;">🔬 Clean Label 無鹼高纖製麵技術攻堅手冊</h2>
+  <p>要在不添加任何化學鹼（如碳酸鈉、碳酸鉀或梘水）的前提下，硬幹 <strong>6% 的 JRS VITACEL 312F</strong> 且讓麵體順利壓延、成型，這在食品高分子物理學上是一個<strong>極高難度的挑戰</strong>。</p>
+  <p>我們必須先從第一性原理，看穿「不加鹼時，麵糰會崩潰的底層化學真相」，然後動用「生物級緩衝」、「共價鍵化學旁路」與「加工助劑不標示規則」這三套 Clean Label 組合拳來強行破解。</p>
+
+  <h2 style="border-color:var(--red);color:var(--red);">🚨 為什麼不加鹼，312F 的 pH 4.6 會成為「斷筋毒藥」？</h2>
+  <p>小麥蛋白質（麥醇蛋白與麥穀蛋白）的等電點（pI）大約落在 <span class="math">pH 6.5 ~ 8.1</span> 之間。</p>
+  <div class="callout">
+    <strong>常規狀態：</strong> 正常麵糰 pH ≈ 6.0，蛋白質表面淨電荷平衡，分子鏈彼此靠攏，縮合出 <span class="chem">─S─S─</span> 二硫鍵麵筋網絡。
+  </div>
+  <div class="danger-callout">
+    <strong>物理毀滅：</strong> 塞入 6% 的 312F，微孔殘留強酸將麵糰 pH 壓低到 5.0 以下（接近 4.6）。小麥蛋白基團高度質子化，分子表面帶上強烈「同種正電荷」。<br><br>
+    💥 <strong>微觀物理崩潰：</strong>「同性相斥（Electrostatic Repulsion）」令蛋白鏈彼此推擠，二硫鍵成型率暴跌。工廠災難：麵糰無延展性，進壓延機如乾砂脆裂破邊。
+  </div>
+
+  <h2>🛠️ Clean Label 四大硬核防禦方案</h2>
+  <h3>方案一：噴霧乾燥蛋白粉（Egg White Powder）<span class="tag-label">Clean Label ✓</span></h3>
+  <p><strong>添加量：</strong><span class="math">1.0% ~ 2.0%</span>（對麵粉重）</p>
+  <ul>
+    <li><strong>天然酸鹼中和：</strong> 蛋白粉天然 pH <span class="math">7.6 ~ 9.3</span>，吃掉 312F 釋放的氫離子，將麵糰 pH 強行拉回 6.0 安全區。</li>
+    <li><strong>熱凝膠外骨骼：</strong> 核心卵白蛋白（Ovalbumin）受熱熱凝膠化，在受損麵筋外圍編織「化學外骨骼」，確保耐煮 Q 彈。</li>
+  </ul>
+  <h3>方案二：轉麩醯胺酸酶（TG 酶）<span class="tag-label">加工助劑免標示</span></h3>
+  <p><strong>添加量：</strong><span class="math">0.3% ~ 0.5%</span>。在 pH 4.6 弱酸環境下仍有強烈催化活性，架設 <span class="chem">ε-(γ-glutamyl) lysine 異肽鍵</span>，讓麵糰在酸性下拉出驚人彈性，壓延平滑如鏡。</p>
+  <h3>方案三：維生素 C（Ascorbic Acid）<span class="tag-label">Clean Label ✓</span></h3>
+  <p><strong>添加量：</strong><span class="math">100 ~ 200 ppm</span>。在微酸性環境氧化促麵筋反應極其順暢，強奪巰基（<span class="chem">─SH</span>）氫原子，強行氧化為二硫鍵（<span class="chem">─S─S─</span>），補償因相斥損失的麵筋強度。</p>
+  <h3>方案四：活性小麥蛋白（Vital Wheat Gluten）<span class="tag-label">Clean Label ✓</span></h3>
+  <p><strong>添加量：</strong><span class="math">1.5% ~ 3.0%</span>。利用勒沙特列原理（Le Chatelier's principle），巰基絕對濃度暴增，即便在 pH 4.6 下相撞形成二硫鍵的機率依然被倍增拉高。</p>
+
+  <h2>🎯 RD 無鹼高纖製麵最佳配方圖譜</h2>
+  <div class="sop-block">【 乾粉段 預混合 SOP 】
+1000g 高筋麵粉
+  ➔  60g JRS VITACEL 312F 纖維粉    (不溶性海綿骨架，pH ≈ 4.6)
+  ➔  15g 噴霧乾燥蛋白粉             (天然 pH 9.0 緩衝 + 熱凝膠外骨骼)
+  ➔  15g 活性小麥蛋白               (數量暴力 — 額外二硫鍵基質)
+  ➔ 0.1g 維生素 C 乾粉              (弱酸性下強效氧化增筋)
+
+【 開機低速乾拌 1 分鐘，微觀粉體幾何均勻鋪展 】
+                  │
+                  ▼
+【 水相段 灌注 SOP 】
+550g ~ 580g 常溫水                  (嚴格控水，防止海綿結構出水黏缸)
+  ➔   2g 太陽化學溶血卵磷脂 VA-1(M)  (乳化劑，改善延展性)
+  ➔ 4~5g TG 酶（轉麩醯胺酸酶）      (加工助劑，異肽鍵共價旁路)
+
+【 均勻溶解 → 一次性灌入攪拌缸 → 高速混捏 → 熟成 → 壓延開線 】</div>
+
+  <div class="callout">
+    <strong>💡 技術總結：</strong> 蛋白粉高pH中和312F酸、維生素C酸性下強開二硫鍵、TG酶鋪設不受pH影響的異肽鍵共價高鐵。<br><br>
+    最終標籤：<code style="background:#0a0c14;padding:3px 9px;border-radius:4px;font-size:.8rem;color:var(--green);">麵粉、柑橘纖維、雞蛋蛋白粉、小麥蛋白、大豆卵磷脂、維生素C</code>
+  </div>
+
+  <h2>📊 312F vs 7000 纖維特性對照</h2>
+  <table class="compare-table">
+    <thead><tr><th>特性</th><th style="color:var(--red);">VITACEL 312F</th><th style="color:var(--green);">CEAMSA 7000</th></tr></thead>
+    <tbody>
+      <tr><td>粒徑</td><td>粗粒（80–100 μm）</td><td>超細（60 μm）</td></tr>
+      <tr><td>pH</td><td style="color:var(--red);">≈ 4.6（強酸）</td><td style="color:var(--green);">≈ 5.5–6.5（接近中性）</td></tr>
+      <tr><td>纖維含量</td><td>88%</td><td>88%</td></tr>
+      <tr><td>蛋白含量</td><td>5%</td><td>0.5%</td></tr>
+      <tr><td>壓延難度</td><td style="color:var(--red);">高（需四大方案）</td><td style="color:var(--green);">低</td></tr>
+      <tr><td>口感</td><td>明顯纖維感、強咬勁</td><td>細膩順滑、接近原麵</td></tr>
+      <tr><td>適用場景</td><td>強調高纖功能訴求</td><td>兼顧口感與高纖</td></tr>
+    </tbody>
+  </table>
+</div>
+</div><!-- /page2 -->
+
+<!-- ══════════════════════ PAGE 3 行銷文件 ══════════════════════ -->
+<div id="page3" style="display:none;">
+<div style="max-width:900px;margin:0 auto;">
+
+<!-- Identity bar — NOVAL 置中風格 -->
+<div style="text-align:center;padding:28px 24px 24px;margin-bottom:14px;
+  background:linear-gradient(160deg,rgba(108,99,255,.06) 0%,rgba(247,151,30,.06) 100%);
+  border:1px solid rgba(247,151,30,.25);border-radius:14px;
+  position:relative;overflow:hidden;">
+  <!-- 裝飾線 -->
+  <div style="width:48px;height:2px;background:var(--a2);margin:0 auto 14px;border-radius:2px;opacity:.7;"></div>
+  <div style="font-size:.65rem;color:var(--a2);font-weight:800;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:13px;">
+    NoodleNoodle &nbsp;·&nbsp; 行銷策略文件
+  </div>
+  <div style="font-size:1rem;color:var(--text);font-weight:400;line-height:1.9;max-width:560px;margin:0 auto;">
+    吃碳水是人類幾百萬年演化的物理本能，這沒有錯。
+  </div>
+  <div style="font-size:1.05rem;color:var(--a2);font-weight:700;line-height:1.85;margin-top:4px;">
+    錯的是現代精緻小麥剝奪了蛋白質與纖維的防禦外殼。
+  </div>
+  <div style="width:48px;height:2px;background:var(--a2);margin:16px auto 0;border-radius:2px;opacity:.7;"></div>
+</div>
+
+<!-- ⓪ 第一性原理科學論述 -->
+<div class="doc-card" style="margin-bottom:11px;border-left:3px solid var(--accent);">
+  <h2 style="margin-top:0;border-color:var(--accent);color:var(--accent);">🧬 第一性原理</h2>
+
+  <!-- ❌ I: 完全不吃碳水 -->
+  <h3 style="color:var(--red);display:flex;align-items:center;gap:7px;">
+    <span style="font-size:1.1rem;">☠️</span> 一、完全不吃碳水：對大腦與細胞的「能源斷電」
+  </h3>
+  <p style="font-size:.84rem;">很多提倡極端飲食的人會說「碳水化合物不是必需營養素」，但從細胞生化燃料的底層機制來看，大腦和特定細胞對葡萄糖有著<strong>不可妥協的物理依賴</strong>。</p>
+
+  <div class="danger-callout" style="margin-bottom:9px;">
+    <strong>① 糖解作用（Glycolysis）的底層物理速度</strong><br>
+    <ul style="margin:6px 0 0 16px;font-size:.82rem;line-height:1.75;">
+      <li><strong>紅血球的死命令：</strong>RBC 沒有線粒體，無法利用脂肪酸或酮體，葡萄糖是其唯一能量來源。</li>
+      <li><strong>大腦的危機防禦：</strong>大腦在長期飢餓時酮體可供應約 60–70% 能量，但仍有 30–40% 的缺口必須由葡萄糖填補。</li>
+      <li><strong>代償災難（糖質新生）：</strong>身體被迫拆解肌肉胺基酸，強行轉化為葡萄糖——這是極其耗能的逆向生化過程。</li>
+      <li><strong>心理反撲（NPY 獎賞本能）：</strong>大腦低糖訊號下，下視丘持續釋放神經胜肽 Y（NPY），引發對澱粉甜食的補償性瘋狂渴望。這不是意志力不足，是演化本能在開火。</li>
+    </ul>
+  </div>
+
+  <!-- ❌ II: 過度蛋白 -->
+  <h3 style="color:var(--yellow);display:flex;align-items:center;gap:7px;margin-top:14px;">
+    <span style="font-size:1.1rem;">☠️</span> 二、過度攝取蛋白質：肝腎的「氨毒性與脫氨基壓力」
+  </h3>
+  <p style="font-size:.84rem;">人體有地方儲存碳水（肝醣、肌醣），有無限空間儲存脂肪，但<strong>人體沒有任何地方可以儲存多餘的蛋白質</strong>。</p>
+
+  <div class="callout" style="margin-bottom:9px;border-color:rgba(255,217,61,.3);background:rgba(255,217,61,.06);">
+    <strong>① 尿素循環（Urea Cycle）的物理飽和</strong><br>
+    <ul style="margin:6px 0 0 16px;font-size:.82rem;line-height:1.75;">
+      <li><strong>脫氨基作用：</strong>多餘胺基酸無法儲存，肝臟必須立刻脫氨基轉化為碳骨架發電或儲脂。</li>
+      <li><strong>氨毒性（NH₃）：</strong>副產物是劇毒游離氨，肝臟需消耗大量 ATP 將其加工成尿素，再由腎臟排出。</li>
+      <li><strong>腎臟超載：</strong>長期過量蛋白質使腎小球過濾率（GFR）持續高壓，增加腎臟微血管物理磨損。</li>
+      <li><strong>慢性脫水與疲勞：</strong>排泄尿素需帶走大量水分與礦物質，引發口渴、口臭（氨氣）與高壓後疲勞。</li>
+    </ul>
+  </div>
+
+  <!-- ✅ III: NoodleNoodle 中庸哲學 -->
+  <h3 style="color:var(--green);margin-top:14px;">🌾 三、NoodleNoodle 的「中庸與完整」行銷哲學</h3>
+  <div class="sop-block" style="font-size:.8rem;line-height:2;letter-spacing:.3px;">【 極端減碳 】：身體拆解肌肉、大腦高壓焦慮、引發瘋狂反撲   ❌
+【 過度蛋白 】：肝腎脫氨超載、身體慢性脫水、疲勞口臭         ❌
+【 NoodleNoodle 】：順應本能的碳水 ＋ 剛剛好的防禦外殼（蛋白/纖維）
+                    ＝ 系統完美平衡                           ✅</div>
+
+  <!-- 賈伯斯/Hubert Joly 溫暖對話 -->
+  <div style="margin-top:13px;padding:16px 20px;border-radius:10px;
+    background:linear-gradient(135deg,rgba(108,99,255,.1),rgba(34,211,160,.08));
+    border:1px solid rgba(108,99,255,.3);position:relative;">
+    <div style="font-size:.67rem;color:var(--accent);font-weight:800;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:9px;">
+      ❝ 品牌溫暖對話稿（賈伯斯 / Hubert Joly 風格）
+    </div>
+    <p style="font-size:.86rem;line-height:1.85;color:var(--text);font-style:italic;margin-bottom:0;">
+      「我們看過太多人在飲食的極端裡受苦。<br>
+      有人為了健康完全不吃碳水，結果大腦焦慮、身體開始拆解自己的肌肉來發電；<br>
+      有人走向另一個極端，拼命塞進過量的蛋白質，讓肝臟和腎臟疲於奔命。<br><br>
+      這些極端，都是在懲罰你的身體。<br><br>
+      NoodleNoodle 想告訴你：<strong style="color:var(--green);">你的身體沒有錯，碳水也沒有錯。</strong><br>
+      我們不搞極端。我們只是用科學，把你應得的碳水化合物，配上『剛剛好、能拉平血糖曲線』的優質植物蛋白與膳食纖維。<br>
+      我們不拆系統、不加重負擔，我們只是用最溫和、最順應演化本能的方式，<br>
+      讓你的身體運作得<strong style="color:var(--accent);">像一首和諧的交響樂。</strong>」
+    </p>
+  </div>
+</div>
+
+<!-- ① 客群分析 -->
+<div class="doc-card" style="margin-bottom:11px;">
+  <h2 style="margin-top:0;border-color:var(--a2);color:var(--a2);">👥 核心客群極限剖析</h2>
+  <p style="font-size:.83rem;">買普通麵條的人買的是「熱量」；願意付 3–5 倍高單價的人，買的是<strong>「健康管理的時間與精神機會成本」</strong>。</p>
+
+  <div id="mkt-segments" style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px;"></div>
+</div>
+
+<!-- ② 行銷行動清單 -->
+<div class="doc-card" style="margin-bottom:11px;">
+  <h2 style="margin-top:0;border-color:var(--green);color:var(--green);">✅ 台灣行銷關鍵行動清單</h2>
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+    <span style="font-size:.75rem;color:var(--t2);">預算方案篩選：</span>
+    <button class="board-tab-btn b1 active" id="tier-all" onclick="setTier('all')">全部顯示</button>
+    <button class="board-tab-btn b2" id="tier-A" onclick="setTier('A')">方案A ≤20萬</button>
+    <button class="board-tab-btn b2" id="tier-B" onclick="setTier('B')">方案B 50–150萬</button>
+    <button class="board-tab-btn b2" id="tier-C" onclick="setTier('C')">方案C 300萬+</button>
+  </div>
+  <div id="mkt-checklist"></div>
+  <!-- Budget summary -->
+  <div style="margin-top:12px;padding:11px 14px;background:rgba(34,211,160,.07);border:1px solid rgba(34,211,160,.25);border-radius:8px;display:flex;gap:18px;flex-wrap:wrap;align-items:center;">
+    <span style="font-size:.8rem;color:var(--t2);">已勾選項目預算估計：</span>
+    <span id="mkt-budget-sum" style="font-size:1.1rem;font-weight:800;color:var(--green);">0 萬</span>
+    <span id="mkt-checked-count" style="font-size:.78rem;color:var(--t2);"></span>
+  </div>
+</div>
+
+<!-- ③ 預算方案 -->
+<div class="doc-card">
+  <h2 style="margin-top:0;border-color:var(--accent);color:var(--accent);">💰 預算方案模擬器</h2>
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+    <button class="board-tab-btn b1 active" id="plan-A" onclick="showPlan('A')">方案A · 精實新創期</button>
+    <button class="board-tab-btn b2" id="plan-B" onclick="showPlan('B')">方案B · 穩健成長期</button>
+    <button class="board-tab-btn b2" id="plan-C" onclick="showPlan('C')">方案C · 市場領導期</button>
+  </div>
+  <div id="plan-display"></div>
+</div>
+
+</div>
+</div><!-- /page3 -->
+
+<script>
+// ══ Marketing data ══════════════════════════════════════════
+const MKT_SEGMENTS = [
+  { label:'精準控糖\n高薪白領族', pct:45, color:'var(--accent)',
+    popPct:4.2, popK:990,
+    gender:'女65% / 男35%', age:'28–45 歲', status:'單身・頂客族居多',
+    pain:'喜愛麵食，但痛恨飯後嗜睡與體重焦慮',
+    logic:'機能性 ＞ 價格，少一杯星巴克換一餐控糖' },
+  { label:'高效增肌\n減脂極致派', pct:35, color:'var(--green)',
+    popPct:3.1, popK:730,
+    gender:'男50% / 女50%', age:'24–38 歲', status:'多為單身',
+    pain:'厭倦吞嚥雞胸肉與乳清，渴望真正食物口感',
+    logic:'計算每克蛋白質 CP 值，與蛋白補給品交叉比對' },
+  { label:'代謝健康\n中產銀髮族', pct:20, color:'var(--a2)',
+    popPct:5.8, popK:1360,
+    gender:'女60% / 男40%', age:'45–65 歲', status:'已婚、子女成年',
+    pain:'健檢出現紅字（血糖偏高）或面臨肌少症警告',
+    logic:'極度依賴專業醫學背書與親友口碑' },
+  { label:'膠原保養\n熟齡女性族', pct:15, color:'#b478ff',
+    popPct:3.5, popK:820,
+    gender:'女85% / 男15%', age:'35–55 歲', status:'已婚・注重外貌保養',
+    pain:'想補充膠原蛋白，但市售膠原飲高糖・高價、無飽足感',
+    logic:'Verisol P 臨床實證「口服 2.5g/天可增加皮膚彈性」，將主食變成美容保養儀式' },
+];
+
+const MKT_ACTIONS = [
+  // cat, id, title, desc, budget(萬), priority(1-5), tiers, rec
+  { cat:'🏆 信任背書', id:'nutri', title:'營養師 / 醫師 KOL 合作',
+    desc:'找3–5位自媒體營養師進行成份拆解背書，將科學數據白話化（等於一片雞胸肉的蛋白+三份高麗菜的纖維）',
+    budgetMin:5, budgetMax:30, priority:5, tiers:['A','B','C'], rec:'強烈建議' },
+  { cat:'🏆 信任背書', id:'cert', title:'Clean Label 認證 / 國際獎項',
+    desc:'台灣穀研所、AA 無添加三星認證，或 Monde Selection。不為得獎，為降低高單價信任門檻',
+    budgetMin:5, budgetMax:30, priority:4, tiers:['B','C'], rec:'中後期建議' },
+  { cat:'📦 通路策略', id:'crowdfund', title:'群眾募資預售（嘖嘖 / FlyingV）',
+    desc:'鎖定早期大眾、預收資金、測試定價反應，避免初期盲目囤貨壓垮現金流',
+    budgetMin:6, budgetMax:15, priority:5, tiers:['A','B'], rec:'必做起手式' },
+  { cat:'📦 通路策略', id:'sampling', title:'線下試吃會 / CGM 聯名',
+    desc:'與連續血糖監測 App 或診所合作，讓用戶看到「普通麵 vs 機能麵」的血糖波動差異，用數據說話',
+    budgetMin:10, budgetMax:40, priority:3, tiers:['B','C'], rec:'中期建議' },
+  { cat:'📦 通路策略', id:'radio-bus', title:'電台試吃 / 遊覽車試吃',
+    desc:'聯絡地方廣播電台節目合作試吃，並與旅遊業者搭配在遊覽車上提供試吃箱，精準觸達 45+ 銀髮族客群',
+    budgetMin:3, budgetMax:15, priority:3, tiers:['B','C'], rec:'中期建議' },
+  { cat:'📦 通路策略', id:'shopee', title:'蝦皮商城上架（純版位）',
+    desc:'開通蝦皮商城建立正品形象・設定基礎商品頁，不燒關鍵字廣告，流量由 CGM 與 KOL 導入',
+    budgetMin:1, budgetMax:3, priority:3, tiers:['A','B','C'], rec:'建議' },
+  { cat:'📦 通路策略', id:'cgm-clinic', title:'🩸 精準控糖 CGM 診所／社群裂變',
+    desc:'將原蝦皮關鍵字預算（約4萬）轉投 CGM 自媒體或功能醫學診所合作：三階段高濕平衡血糖對比測試。讓控糖白領親眼在 App 看到「普通白麵 vs 高蛋白高纖麵」血糖波動差，數據 ＋ 醫學背書直擊痛點，創造社群自傳播',
+    budgetMin:3, budgetMax:8, priority:5, tiers:['A','B','C'], rec:'強烈建議' },
+  { cat:'📱 數位廣告', id:'meta', title:'Meta / IG 短影音廣告',
+    desc:'深夜辦公吃完不昏睡、10分鐘減脂餐。投放28–55歲對健康/減重/減醣/路跑感興趣受眾',
+    budgetMin:8, budgetMax:40, priority:4, tiers:['A','B','C'], rec:'建議' },
+  { cat:'📱 數位廣告', id:'seo', title:'關鍵字行銷 SEO / SEM',
+    desc:'飽和佔領：減脂乾麵、低卡麵條、控糖澱粉替代、高蛋白宵夜。轉換率最高的精準池',
+    budgetMin:5, budgetMax:15, priority:5, tiers:['A','B','C'], rec:'強烈建議' },
+  { cat:'📱 數位廣告', id:'yahoo', title:'Yahoo 廣告',
+    desc:'僅適合主要客群為55歲以上傳統銀髮族，否則 ROI 明顯低於 Meta 與 Google',
+    budgetMin:5, budgetMax:20, priority:2, tiers:['C'], rec:'謹慎評估' },
+  { cat:'🎯 KOL 策略', id:'micro-kol', title:'微網紅 Barter 互惠試吃',
+    desc:'找20–30位5000粉以下健身/減脂微網紅，不給業配金，免費寄樣換 IG Story 短評',
+    budgetMin:2, budgetMax:5, priority:4, tiers:['A'], rec:'強烈建議' },
+  { cat:'🎯 KOL 策略', id:'kol-mid', title:'中型團購主 KOL 業配 + 分潤',
+    desc:'挑選導購力強的健康型網紅，採「基礎稿費 + 營業額分潤」模式降低風險',
+    budgetMin:20, budgetMax:50, priority:4, tiers:['B','C'], rec:'建議' },
+  { cat:'🎯 KOL 策略', id:'celebrity', title:'名人明星代言 / 跨界聯名',
+    desc:'與大型連鎖健身房或知名減脂 App 進行深度會員聯名禮',
+    budgetMin:100, budgetMax:200, priority:3, tiers:['C'], rec:'市場領導期' },
+  { cat:'🏛 政府資源', id:'sbir', title:'SBIR 小型企業創新研發計畫',
+    desc:'若製麵技術有獨家突破（降鈉、提高植物蛋白比例、克服無麩質製程結構），可申請經濟部 SBIR，約50–100萬補助',
+    budgetMin:0, budgetMax:5, priority:4, tiers:['B','C'], rec:'中後期申請' },
+];
+
+const PLANS = {
+  A: {
+    label:'方案A · 精實新創期', budget:'≤ 20 萬台幣', color:'var(--accent)',
+    strategy:'不擴大戰線，以「募資 + 團購」滾動現金流',
+    items:[
+      { name:'群眾募資頁面設計（嘖嘖）', amt:6, pct:30 },
+      { name:'Meta / IG 導流廣告', amt:8, pct:40 },
+      { name:'微網紅 Barter 試吃', amt:2, pct:10 },
+      { name:'蝦皮基礎建置 + 備用金', amt:4, pct:20 },
+    ],
+    outcome:'用預收款進行第一批大貨生產，達到損益兩平並驗證市場',
+  },
+  B: {
+    label:'方案B · 穩健成長期', budget:'50–150 萬台幣', color:'var(--a2)',
+    strategy:'建立科學信任，多管道收割流量，申請政府補助',
+    items:[
+      { name:'營養師 / 醫師 KLO 背書', amt:30, pct:20 },
+      { name:'KOL 分潤業配', amt:20, pct:13 },
+      { name:'Meta + Google Perf Max 廣告', amt:40, pct:27 },
+      { name:'SEO + 品牌電商建立', amt:15, pct:10 },
+      { name:'SBIR + 技術認證', amt:15, pct:10 },
+      { name:'通路鋪設與周轉備用', amt:30, pct:20 },
+    ],
+    outcome:'打造「專家形象」，Google 搜尋時充滿正面開箱與專業推薦，月營收進入穩定放大階段',
+  },
+  C: {
+    label:'方案C · 市場領導期', budget:'300 萬台幣以上', color:'var(--green)',
+    strategy:'全通路整合（Omnichannel）、情感認同建立、國際獎項加持',
+    items:[
+      { name:'國際品質大獎申請', amt:30, pct:10 },
+      { name:'名人代言 / 跨界聯名', amt:100, pct:33 },
+      { name:'全網數位 + 戶外 O2O 廣告', amt:120, pct:40 },
+      { name:'實體通路進駐（City\'super / Mia C\'bon）', amt:50, pct:17 },
+    ],
+    outcome:'從小眾「減肥食品」提升為中高產階級的高尚生活風格，建立難以被抄襲的品牌護城河',
+  },
+};
+
+let activeTier = 'all';
+let activePlan = 'A';
+
+function renderMktSegments() {
+  const el = document.getElementById('mkt-segments');
+  if (!el) return;
+  const totalPop = MKT_SEGMENTS.reduce((a,s)=>a+(s.popK||0),0);
+  el.innerHTML = MKT_SEGMENTS.map(s => `
+    <div style="background:var(--card2);border-radius:10px;padding:12px 14px;border:1.5px solid ${s.color}33;">
+      <div style="font-size:.88rem;font-weight:800;color:${s.color};margin-bottom:4px;white-space:pre-line;">${s.label}</div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:5px;">
+        <span style="font-size:1.15rem;font-weight:900;color:${s.color};">${s.pct}%</span>
+        <span style="font-size:.68rem;color:var(--t2);">目標客群佔比</span>
+      </div>
+      <div style="height:6px;background:var(--border);border-radius:4px;margin-bottom:8px;">
+        <div style="height:100%;width:${s.pct}%;background:${s.color};border-radius:4px;transition:width .4s;"></div>
+      </div>
+      <!-- 台灣人口佔比 -->
+      <div style="background:rgba(0,0,0,.2);border-radius:6px;padding:5px 9px;margin-bottom:7px;
+        border-left:3px solid ${s.color};">
+        <div style="font-size:.62rem;color:var(--t2);margin-bottom:2px;">🇹🇼 台灣潛在受眾估計</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+          <span style="font-size:.95rem;font-weight:800;color:${s.color};">≈ ${s.popK ? s.popK.toLocaleString()+'K' : '--'} 人</span>
+          <span style="font-size:.7rem;color:var(--t2);">（約佔總人口 ${s.popPct||'--'}%）</span>
+        </div>
+      </div>
+      <div style="font-size:.68rem;color:var(--t2);line-height:1.7;">
+        👤 ${s.gender}<br>🎂 ${s.age}<br>💍 ${s.status}<br>
+        <span style="color:var(--text);">痛點：</span>${s.pain}<br>
+        <span style="color:var(--text);">決策：</span>${s.logic}
+      </div>
+    </div>
+  `).join('') + `
+  <div style="grid-column:1/-1;background:rgba(232,184,75,.07);border:1px solid rgba(232,184,75,.25);
+    border-radius:10px;padding:11px 16px;display:flex;gap:20px;flex-wrap:wrap;align-items:center;margin-top:2px;">
+    <span style="font-size:.72rem;color:var(--t2);">四大客群合計台灣潛在受眾：</span>
+    <span style="font-size:1.25rem;font-weight:900;color:var(--gold);">≈ ${totalPop.toLocaleString()}K 人</span>
+    <span style="font-size:.72rem;color:var(--t2);">（約佔台灣總人口 ${(MKT_SEGMENTS.reduce((a,s)=>a+(s.popPct||0),0)).toFixed(1)}%，全台約 2,350 萬人）</span>
+  </div>`;
+}
+
+function renderChecklist() {
+  const el = document.getElementById('mkt-checklist');
+  if (!el) return;
+  // Group by category
+  const cats = [...new Set(MKT_ACTIONS.map(a => a.cat))];
+  const stars = n => '★'.repeat(n) + '☆'.repeat(5-n);
+  const recColor = r => r.includes('強烈')?'var(--green)':r.includes('謹慎')?'var(--red)':'var(--yellow)';
+  const tierBg = ['A','B','C'].map(t=>`<span style="font-size:.6rem;padding:1px 5px;border-radius:8px;background:rgba(108,99,255,.15);color:var(--accent);">${t}</span>`);
+
+  el.innerHTML = cats.map(cat => {
+    const items = MKT_ACTIONS.filter(a => a.cat === cat && (activeTier === 'all' || a.tiers.includes(activeTier))).sort((a,b) => a.budgetMin - b.budgetMin);
+    if (!items.length) return '';
+    return `
+      <div style="margin-bottom:12px;">
+        <div class="sec-lbl" style="margin-bottom:5px;">${cat}</div>
+        ${items.map(a => `
+          <div class="ing-block" id="mkt-blk-${a.id}" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;">
+            <input type="checkbox" id="mkt-ck-${a.id}" style="margin-top:3px;width:16px;height:16px;accent-color:var(--green);cursor:pointer;" onchange="updateMktBudget()">
+            <div style="flex:1;">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">
+                <label for="mkt-ck-${a.id}" style="font-size:.84rem;font-weight:700;cursor:pointer;">${a.title}</label>
+                <span style="font-size:.68rem;padding:1px 6px;border-radius:8px;background:${recColor(a.rec)}22;color:${recColor(a.rec)};font-weight:700;">${a.rec}</span>
+                ${a.tiers.map(t=>`<span style="font-size:.58rem;padding:1px 5px;border-radius:6px;background:rgba(108,99,255,.12);color:var(--accent);">${t}</span>`).join('')}
+              </div>
+              <div style="font-size:.73rem;color:var(--t2);margin-bottom:5px;line-height:1.6;">${a.desc}</div>
+              <div style="display:flex;gap:12px;align-items:center;">
+                <span style="font-size:.7rem;color:var(--yellow);">${stars(a.priority)}</span>
+                <span style="font-size:.7rem;color:var(--t2);">預算：${a.budgetMin === 0 ? '申請制' : a.budgetMin+'–'+a.budgetMax+'萬'}</span>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>`;
+  }).join('');
+  updateMktBudget();
+}
+
+function updateMktBudget() {
+  let total = 0, count = 0;
+  MKT_ACTIONS.forEach(a => {
+    const ck = document.getElementById('mkt-ck-'+a.id);
+    if (ck && ck.checked) { total += (a.budgetMin + a.budgetMax) / 2; count++; }
+  });
+  const el = document.getElementById('mkt-budget-sum');
+  const cel = document.getElementById('mkt-checked-count');
+  if (el) el.textContent = total === 0 ? '0 萬' : '~' + total.toFixed(0) + ' 萬';
+  if (cel) cel.textContent = count > 0 ? `（已勾選 ${count} 項）` : '';
+}
+
+function setTier(t) {
+  activeTier = t;
+  ['all','A','B','C'].forEach(id => {
+    const btn = document.getElementById('tier-'+id);
+    if (btn) btn.classList.toggle('active', id === t);
+  });
+  renderChecklist();
+}
+
+function renderPlan(p) {
+  const plan = PLANS[p];
+  const el = document.getElementById('plan-display');
+  if (!el || !plan) return;
+  const totalAmt = plan.items.reduce((s,i)=>s+i.amt, 0);
+  el.innerHTML = `
+    <div style="padding:12px 16px;background:rgba(0,0,0,.15);border-radius:8px;border-left:4px solid ${plan.color};margin-bottom:12px;">
+      <div style="font-size:.72rem;color:${plan.color};font-weight:700;margin-bottom:4px;">總預算：${plan.budget}</div>
+      <div style="font-size:.84rem;font-weight:700;margin-bottom:2px;">核心戰略</div>
+      <div style="font-size:.8rem;color:var(--t2);">${plan.strategy}</div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div class="sec-lbl">預算分配</div>
+      ${plan.items.map(item => `
+        <div style="margin-bottom:7px;">
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:3px;">
+            <span>${item.name}</span>
+            <span style="font-weight:700;color:${plan.color};">${item.amt} 萬 (${item.pct}%)</span>
+          </div>
+          <div style="height:7px;background:var(--border);border-radius:4px;">
+            <div style="height:100%;width:${item.pct}%;background:${plan.color};border-radius:4px;opacity:.8;"></div>
+          </div>
+        </div>
+      `).join('')}
+      <div style="display:flex;justify-content:space-between;font-size:.79rem;padding:7px 0;border-top:1px solid var(--border);margin-top:5px;font-weight:700;">
+        <span>總計</span><span style="color:${plan.color};">${totalAmt} 萬</span>
+      </div>
+    </div>
+    <div style="padding:10px 14px;background:rgba(34,211,160,.08);border:1px solid rgba(34,211,160,.25);border-radius:8px;font-size:.8rem;">
+      <span style="color:var(--green);font-weight:700;">📈 預期成效：</span>${plan.outcome}
+    </div>`;
+}
+
+function showPlan(p) {
+  activePlan = p;
+  ['A','B','C'].forEach(id => {
+    const btn = document.getElementById('plan-'+id);
+    if (btn) btn.classList.toggle('active', id === p);
+  });
+  renderPlan(p);
+}
+</script>
+
+<script>
+// ══ Reference data ══════════════════════════════════════════
+const ING_REF = {
+  wheat:    { name:'小麥蛋白(IWP)',       protein:82.8, fat:0.5,  fiber:0.7,  sugar:0.3, color:'#6c63ff' },
+  soy:      { name:'炒熟黃豆粉',          protein:36,   fat:18,   fiber:9.3,  sugar:3.0, color:'#22d3a0' },
+  black:    { name:'黑豆粉',              protein:34,   fat:1.5,  fiber:16,   sugar:2.0, color:'#f7971e' },
+  buck:     { name:'熟蕎麥粉',            protein:13,   fat:3.0,  fiber:10,   sugar:2.0, color:'#ff5c5c' },
+  pea:      { name:'豌豆粉',              protein:22,   fat:2.0,  fiber:15,   sugar:3.0, color:'#ffd93d' },
+  collagen: { name:'膠原蛋白 Verisol P',  protein:91,   fat:0,    fiber:0,    sugar:0,   color:'#b478ff' },
+  other:    { name:'其他',                protein:15,   fat:5.0,  fiber:5,    sugar:2.0, color:'#9aa0b4' },
+};
+const FLOUR_REF = { protein:12, fat:1.5, fiber:2.5, sugar:0.5 }; // per 100g
+const F312_REF  = { protein:5,  fat:0,   fiber:88,  sugar:0 };
+const F7000_REF = { protein:0.5,fat:0,   fiber:88,  sugar:0 };
+
+let sauces = new Set([1]);
+let activeBoard = 1;
+
+// ══ Helpers ═════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const ckEn  = id => $(id).checked;
+const slVal = id => +$(id).value;
+
+function feeCalc(price) {
+  const shopee = ckEn('ck-shopee') ? price * 0.125 : 0;
+  const tax    = price / 1.05 * 0.05;
+  const ads    = ckEn('ck-ads')    ? price * 0.22  : 0;
+  return { shopee, tax, ads, net: price - shopee - tax - ads };
+}
+
+function feeCalcB2(price) {
+  const shopee = ckEn('ck-shopee-b2') ? price * 0.125 : 0;
+  const tax    = price / 1.05 * 0.05;
+  const ads    = ckEn('ck-ads-b2')    ? price * 0.22  : 0;
+  return { shopee, tax, ads, net: price - shopee - tax - ads };
+}
+
+function toggleIng(id) {
+  const en = ckEn('en-' + id);
+  $('blk-' + id).classList.toggle('disabled', !en);
+  $(id + '-r').disabled = !en;
+  $(id + '-p').disabled = !en;
+  if (id === 'other') $('other-prot').disabled = !en;
+  if (!en) $(id + '-r').value = 0;
+  calc();
+}
+
+function toggleFiber(type) {
+  const box = $('fbox-' + type);
+  const en  = ckEn('en-' + type);
+  box.classList.toggle('active', en);
+  box.classList.toggle('disabled', !en);
+  $('amt-' + type).disabled = !en;
+  // price slider id pattern: '312f-p' / '7000-p'
+  const pSlider = $(type + '-p');
+  if (pSlider) pSlider.disabled = !en;
+  calc();
+}
+
+function toggleSauce(id) {
+  const btn = $('s' + id);
+  if (sauces.has(id)) { sauces.delete(id); btn.classList.remove('active'); }
+  else                { sauces.add(id);    btn.classList.add('active'); }
+}
+
+function onFlourTypeChange() {
+  const val = $('flour-type').value;
+  $('custom-flour-row').style.display = val === 'custom' ? '' : 'none';
+  calc();
+}
+
+function getFlourProtein() {
+  const val = $('flour-type').value;
+  if (val === 'custom') {
+    $('sv-flour-p-f').textContent = slVal('flour-p-f').toFixed(1) + '%';
+    return slVal('flour-p-f');
+  }
+  return +val;
+}
+
+// ══ Pre-mix composition ════════════════════════════════════
+function getPremixData() {
+  const IDS = ['wheat','soy','black','buck','pea','collagen','other'];
+  let totalR = 0, costSum = 0;
+  let pmProt=0, pmFat=0, pmFiber=0, pmSugar=0;
+  const grams = {};
+
+  IDS.forEach(id => {
+    const en = ckEn('en-' + id);
+    const r  = en ? slVal(id + '-r') : 0;
+    const p  = slVal(id + '-p');
+    grams[id] = r; // ratio (we'll convert later)
+
+    $('sv-' + id + '-r').textContent = r + '%';
+    $('sv-' + id + '-p').textContent = p + (id==='buck'?'元/kg':' 元/kg');
+
+    if (en && r > 0) {
+      const ref = id === 'other'
+        ? { protein: slVal('other-prot'), fat:5, fiber:5, sugar:2 }
+        : ING_REF[id];
+      totalR   += r;
+      costSum  += r * p; // yuan per kg * ratio
+      pmProt   += r * ref.protein;
+      pmFat    += r * ref.fat;
+      pmFiber  += r * ref.fiber;
+      pmSugar  += r * ref.sugar;
+    }
+  });
+  $('sv-other-prot').textContent = slVal('other-prot') + '%';
+
+  const eff = totalR || 1;
+  return {
+    totalRatio: totalR,
+    costPerKg:  totalR > 0 ? costSum / eff : 0,
+    prot:  pmProt  / eff,
+    fat:   pmFat   / eff,
+    fiber: pmFiber / eff,
+    sugar: pmSugar / eff,
+    ratios: grams,
+  };
+}
+
+// ══ Formula solver (1 unknown: pre-mix total P) ═════════════
+function solveFormula(pm, flourProt, batchF, saltPct, waterRatio, protTarget, C312, C7000) {
+  const F   = batchF;
+  const S   = F * saltPct / 100;
+  const C   = C312 + C7000;
+  const wr  = waterRatio / 100;
+  const k   = protTarget / 100 * (1 + wr); // protein fraction needed
+
+  // flour prot contribution
+  const fixedProt = F * flourProt / 100
+    + C312 * F312_REF.protein / 100
+    + C7000 * F7000_REF.protein / 100;
+
+  // P * pm.prot/100 = k*(F + P + C + S) - fixedProt
+  // P * (pm.prot/100 - k) = k*(F + C + S) - fixedProt
+  const denom = pm.prot / 100 - k;
+  if (Math.abs(denom) < 1e-6) return null; // singular
+  const P = (k * (F + C + S) - fixedProt) / denom;
+  return P;
+}
+
+// ══ Render formula table ════════════════════════════════════
+function renderFormulaTable(pm, flourProt, batchF, saltPct, waterRatio, protTarget, C312g, C7000g) {
+  const F  = batchF;
+  const S  = F * saltPct / 100;
+  const C312  = ckEn('en-312f') ? C312g  : 0;
+  const C7000 = ckEn('en-7000') ? C7000g : 0;
+  const C = C312 + C7000;
+
+  const P = solveFormula(pm, flourProt, F, saltPct, waterRatio, protTarget, C312, C7000);
+  $('formula-error').style.display = (P === null) ? '' : 'none';
+  $('formula-neg').style.display   = (P !== null && P < 0) ? '' : 'none';
+  if (P === null || P < 0) {
+    $('formula-tbody').innerHTML = '';
+    return null;
+  }
+
+  const wr = waterRatio / 100;
+  const D  = F + P + C + S;
+  const W  = D * wr;
+  const T  = D + W;
+
+  // Build rows
+  const rows = [];
+  const addRow = (cls, name, g, prot_pct, fat_pct, fiber_pct, sugar_pct, fn) => {
+    const baker = (g / F * 100);
+    const total = (g / T * 100);
+    const protG  = g * prot_pct  / 100;
+    const fiberG = g * fiber_pct / 100;
+    rows.push({ cls, name, g, baker, total, protG, fiberG, fn });
+  };
+
+  const flEntry = FLOUR_REF;
+  addRow('flour-row', `台灣麵粉 (蛋白${flourProt}%)`, F, flourProt, flEntry.fat, flEntry.fiber, flEntry.sugar, '基礎多醣基質');
+
+  // Pre-mix ingredients
+  const IDS = ['wheat','soy','black','buck','pea','collagen','other'];
+  IDS.forEach(id => {
+    const en = ckEn('en-' + id);
+    const r  = slVal(id + '-r');
+    if (!en || r === 0) return;
+    const g_ing = P * r / (pm.totalRatio || 1);
+    const ref   = id === 'other'
+      ? { protein: slVal('other-prot'), fat:5, fiber:5, sugar:2 }
+      : ING_REF[id];
+    const displayName = id === 'other' ? ($('other-name').value || '自訂') : ING_REF[id].name;
+    addRow('ing-row', displayName, g_ing, ref.protein, ref.fat, ref.fiber, ref.sugar, '預拌粉成分');
+  });
+
+  if (C312 > 0) addRow('fiber-row', 'JRS VITACEL 312F', C312, F312_REF.protein, 0, F312_REF.fiber, 0, '不溶性纖維骨架');
+  if (C7000 > 0) addRow('fiber-row', 'CEAMSA 7000',      C7000, F7000_REF.protein, 0, F7000_REF.fiber, 0, '細膩纖維補充');
+  if (S > 0) addRow('salt-row', '鹽', S, 0, 0, 0, 0, '調味・鈉來源');
+  addRow('water-row', '配方水', W, 0, 0, 0, 0, `加水比例 ${waterRatio}%`);
+
+  let totalProt = 0, totalFiber = 0;
+  let html = rows.map(r => {
+    totalProt  += r.protG;
+    totalFiber += r.fiberG;
+    return `<tr class="${r.cls}">
+      <td>${r.name}<div style="font-size:.64rem;color:var(--t2);">${r.fn}</div></td>
+      <td class="gram-num">${r.g.toFixed(1)}</td>
+      <td>${r.baker.toFixed(2)}%</td>
+      <td>${r.total.toFixed(2)}%</td>
+      <td>${r.protG.toFixed(1)}</td>
+      <td>${r.fiberG.toFixed(1)}</td>
+    </tr>`;
+  }).join('');
+
+  const actualProt  = totalProt  / T * 100;
+  const actualFiber = totalFiber / T * 100;
+  const sodiumMg    = S * 394;
+
+  html += `<tr class="total-row">
+    <td>▶ 總濕麵糰重量</td>
+    <td class="gram-num">${T.toFixed(0)}</td>
+    <td>—</td>
+    <td>100.00%</td>
+    <td>${totalProt.toFixed(1)}</td>
+    <td>${totalFiber.toFixed(1)}</td>
+  </tr>`;
+  $('formula-tbody').innerHTML = html;
+
+  // QC bar (new card-style: inner val spans)
+  const pDiff = Math.abs(actualProt - protTarget);
+  const pClass = pDiff < 0.2 ? 'qc-ok' : pDiff < 0.5 ? 'qc-warn' : 'qc-bad';
+  const qcProtValEl = $('qc-prot-val');
+  if (qcProtValEl) {
+    qcProtValEl.textContent = `${actualProt.toFixed(2)}% (目標${protTarget}%)`;
+    qcProtValEl.className = 'qc-big ' + pClass;
+  } else {
+    $('qc-prot').className = `qc-item ${pClass}`;
+    $('qc-prot').textContent = `蛋白質: ${actualProt.toFixed(2)}%`;
+  }
+  const qcFiberValEl = $('qc-fiber-val');
+  if (qcFiberValEl) { qcFiberValEl.textContent = `${actualFiber.toFixed(2)}%`; qcFiberValEl.className = 'qc-big qc-ok'; }
+  else $('qc-fiber').textContent = `纖維: ${actualFiber.toFixed(2)}%`;
+  const qcSodiumValEl = $('qc-sodium-val');
+  if (qcSodiumValEl) { qcSodiumValEl.textContent = `${sodiumMg.toFixed(0)} mg`; qcSodiumValEl.className = 'qc-big'; }
+  else $('qc-sodium').textContent = `鈉: ${sodiumMg.toFixed(0)}mg/100g乾麵`;
+  const qcWetValEl = $('qc-wet-val');
+  if (qcWetValEl) { qcWetValEl.textContent = `${T.toFixed(0)} g`; qcWetValEl.className = 'qc-big'; }
+  else $('qc-wet').textContent = `濕麵糰: ${T.toFixed(0)}g/批`;
+
+  // 動態加水警告（WAI 實測校準值）
+  // 麵粉 WAI ≈ 0.55 | IWP/大豆蛋白粉 WAI ≈ 0.80 | 柑橘/木質纖維 WAI ≈ 3.5
+  const idealWater = F * 0.55 + P * 0.80 + C * 3.5;
+  const hydrationRatio = W / idealWater;
+  // 建議加水比例（讓 W 達到 idealWater 的 95%）
+  const suggestedWR = Math.ceil(idealWater * 0.95 / (F + P + C + S) * 100);
+  const qcHydEl = $('qc-hydration');
+  if (hydrationRatio < 0.80) {
+    qcHydEl.className = 'qc-item qc-bad';
+    qcHydEl.textContent = `⚠ 游離水嚴重不足（${(hydrationRatio*100).toFixed(0)}%）─ 建議加水比例調至 ${suggestedWR}% 以上`;
+  } else if (hydrationRatio < 0.95) {
+    qcHydEl.className = 'qc-item qc-warn';
+    qcHydEl.textContent = `💧 加水偏低（${(hydrationRatio*100).toFixed(0)}%）─ 建議加水比例拉至 ${suggestedWR}%`;
+  } else {
+    qcHydEl.className = 'qc-item qc-ok';
+    qcHydEl.textContent = `💧 加水充足（${(hydrationRatio*100).toFixed(0)}%，實際${W.toFixed(0)}g / 理論基準${idealWater.toFixed(0)}g）`;
+  }
+
+  return { P, C312, C7000, S, W, T, actualProt, actualFiber, sodiumMg, totalProt, totalFiber };
+}
+
+// ══ Main calc ════════════════════════════════════════════════
+function calc() {
+  const pm = getPremixData();
+
+  // Ratio bar
+  const rMax = Math.max(pm.totalRatio, 100);
+  ['wheat','soy','black','buck','pea','collagen','other'].forEach(id => {
+    $('rb-' + id).style.width = (pm.ratios[id] / rMax * 100) + '%';
+  });
+  $('rb-rest').style.width = (Math.max(0, 100 - pm.totalRatio) / rMax * 100) + '%';
+  const rt = $('ratio-total');
+  if (Math.abs(pm.totalRatio - 100) <= 2) rt.innerHTML = `<span style="color:var(--green)">✓ 預拌粉比例總和：${pm.totalRatio}%（標準配比）</span>`;
+  else if (pm.totalRatio > 100) rt.innerHTML = `<span style="color:var(--red)">⚠ 總和：${pm.totalRatio}%（超出100%，請降低某項比例）</span>`;
+  else rt.innerHTML = `<span style="color:var(--t2)">預拌粉比例總和：${pm.totalRatio}%（系統自動正規化，蛋白質%已按比例換算）</span>`;
+
+  // Protein bar (recipe card)
+  const pmRatio   = slVal('pm-ratio');
+  const flourProt = getFlourProtein();
+  const finalProt = (pmRatio / 100) * pm.prot + (1 - pmRatio / 100) * flourProt;
+  $('premix-prot').textContent = pm.prot.toFixed(1) + '%';
+  $('prot-fill').style.width = Math.min(100, finalProt / 40 * 100) + '%';
+  $('pm-ratio-disp').textContent = pmRatio + '%';
+  if (finalProt < 20) {
+    $('prot-fill').style.background = 'var(--red)';
+    $('prot-status').innerHTML = `<span style="color:var(--red)">⚠ ${finalProt.toFixed(1)}% 低於目標20%</span>`;
+  } else if (finalProt <= 22) {
+    $('prot-fill').style.background = 'var(--green)';
+    $('prot-status').innerHTML = `<span style="color:var(--green)">✓ ${finalProt.toFixed(1)}% 達標 20–22%</span>`;
+  } else {
+    $('prot-fill').style.background = 'var(--yellow)';
+    $('prot-status').innerHTML = `<span style="color:var(--yellow)">💡 ${finalProt.toFixed(1)}% 超過22%，可↓預拌比例</span>`;
+  }
+
+  // Slider displays
+  $('sv-pm-ratio').textContent = pmRatio + '%';
+  const ndBundles = +(($('nd-bundles') && $('nd-bundles').value) || 6);
+  $('sv-nd-mfg').textContent   = slVal('nd-mfg') + ' 元/束';
+  if ($('sv-nd-mfg-b1'))   $('sv-nd-mfg-b1').textContent   = slVal('nd-mfg').toFixed(1) + ' 元/包';
+  if ($('sv-nd-mfg-pack')) $('sv-nd-mfg-pack').textContent = (slVal('nd-mfg') * ndBundles).toFixed(1) + ' 元/包';
+  $('sv-pm-mfg').textContent   = slVal('pm-mfg') + ' 元/kg';
+  $('sv-nd-bag').textContent   = slVal('nd-bag').toFixed(2) + ' 元';
+  $('sv-sauce').textContent    = slVal('sauce-cost') + ' 元';
+  $('sv-box').textContent      = slVal('box-cost') + ' 元/箱';
+  $('sv-prot-target').textContent = slVal('prot-target') + '%';
+  $('sv-water-ratio').textContent = slVal('water-ratio') + '%';
+  // 蒸發濃縮倍數 & 預估乾麵蛋白
+  const evapF = slVal('evap-factor');
+  $('sv-evap-factor').textContent = evapF.toFixed(2) + '×';
+  // 預設顯示簡單估算；若配方已解，下面 prot100 區段會覆蓋
+  $('sv-dry-prot').textContent = '計算中…';
+  window._dryProtTarget = slVal('prot-target') * evapF; // fallback
+  // 纖維單價 displays
+  $('sv-312f-p').textContent = slVal('312f-p') + ' 元/kg';
+  $('sv-7000-p').textContent = slVal('7000-p') + ' 元/kg';
+  $('sv-salt-f').textContent    = slVal('salt-f').toFixed(1) + '%';
+  $('sv-312f-amt').textContent  = slVal('amt-312f').toFixed(1) + ' g';
+  $('sv-7000-amt').textContent      = slVal('amt-7000').toFixed(1) + ' g';
+  $('sv-collagen-r').textContent    = slVal('collagen-r') + '%';
+  $('sv-collagen-p').textContent    = slVal('collagen-p') + '元/kg';
+
+  // Formula table
+  const batchF   = slVal('batch-flour') || 1000;
+  const saltPct  = slVal('salt-f');
+  const waterRatio = slVal('water-ratio');
+  const protTarget = slVal('prot-target');
+  const C312g    = ckEn('en-312f') ? slVal('amt-312f') : 0;
+  const C7000g   = ckEn('en-7000') ? slVal('amt-7000') : 0;
+
+  const formula = renderFormulaTable(pm, flourProt, batchF, saltPct, waterRatio, protTarget, C312g, C7000g);
+
+  // Nutrition table (derive from formula, then scale to dry noodle)
+  if (formula) {
+    const { P, C312, C7000, S: saltG, T: wetT, actualProt, actualFiber, sodiumMg } = formula;
+    // Wet dough ratios → dry noodle (lose water, ~12% moisture remains)
+    // Dry noodle protein ≈ actualProt (wet basis protein scales up when water evaporates)
+    // Wet protein% → dry protein%: prot_dry ≈ prot_wet / (1 - wet_water_fraction) * (1 - 0.12)
+    const wr = slVal('water-ratio') / 100;
+    const waterFrac = wr / (1 + wr); // fraction of total wet weight that is added water
+    // Conservative estimate: dry noodle protein ≈ prot_wet / (1-waterFrac) * 0.88
+    const scale = 0.88 / (1 - waterFrac); // 88% dry matter in finished noodle
+    const prot100  = Math.min(35, actualProt * scale);
+    const fiber100 = Math.min(20, actualFiber * scale);
+    const fat100   = (pm.fat * P / 100 + batchF * 1.5 / 100) / (wetT / (1+wr)) * 0.88 * 100;
+    const sodium100 = saltG * 394 / (wetT / (1+wr)) * 0.88 * 10; // mg per 100g dry
+    // 台灣FDA法規：碳水化合物欄位 = 總碳水（含膳食纖維），不可先扣纖維
+    const saltFrac  = (saltG / (wetT / (1 + wr)) * 0.88 * 100);
+    const carb100   = Math.max(0, 88 - prot100 - fat100 - saltFrac); // 總碳水（含纖維）
+    const carb_net  = Math.max(0, carb100 - fiber100);               // 淨碳水（已扣纖維）
+    const sugar100  = carb100 * 0.038;
+    const cal100    = prot100 * 4 + carb_net * 4 + fiber100 * 2 + fat100 * 9;
+
+    // 更新營養標示表
+    const s80 = 80 / 100;
+    $('nt-cal').textContent     = cal100.toFixed(1);
+    $('nt-cal8').textContent    = (cal100 * s80).toFixed(1);
+    $('nt-prot').textContent    = prot100.toFixed(1);
+    $('nt-prot8').textContent   = (prot100 * s80).toFixed(1);
+    // 同步「預估乾麵蛋白質」——與營養標示同源，精確版
+    $('sv-dry-prot').textContent = prot100.toFixed(1) + ' g/100g';
+    // 同步顯示實際蒸發倍數（prot100 / 濕基蛋白質目標）
+    const actualEvap = protTarget > 0 ? prot100 / protTarget : 1.3;
+    $('sv-evap-factor').textContent = actualEvap.toFixed(2) + '× (實際)';
+    $('nt-fat').textContent     = fat100.toFixed(1);
+    $('nt-fat8').textContent    = (fat100 * s80).toFixed(1);
+    $('nt-carb').textContent    = carb100.toFixed(1);
+    $('nt-carb8').textContent   = (carb100 * s80).toFixed(1);
+    $('nt-sugar').textContent   = sugar100.toFixed(1);
+    $('nt-sugar8').textContent  = (sugar100 * s80).toFixed(1);
+    $('nt-fiber').textContent   = fiber100.toFixed(1);
+    $('nt-fiber8').textContent  = (fiber100 * s80).toFixed(1);
+    $('nt-sodium').textContent  = sodium100.toFixed(0);
+    $('nt-sodium8').textContent = (sodium100 * s80).toFixed(0);
+  }
+
+  // ── 成本計算 ────────────────────────────────────────────
+  const ndWeight  = slVal('nd-weight');
+  const yieldLoss = slVal('yield-loss') / 100;
+  $('sv-yield-loss').textContent = slVal('yield-loss') + '%';
+
+  // pm-ratio：由配方總表自動連動
+  let actualPmRatio;
+  if (formula) {
+    const P    = formula.P;
+    const bF   = slVal('batch-flour') || 1000;
+    const C312x  = ckEn('en-312f') ? slVal('amt-312f') : 0;
+    const C7000x = ckEn('en-7000') ? slVal('amt-7000') : 0;
+    const batchSalt = bF * slVal('salt-f') / 100;
+    const dryTotal  = P + bF + C312x + C7000x + batchSalt;
+    actualPmRatio = dryTotal > 0 ? P / dryTotal * 100 : 0;
+  } else {
+    actualPmRatio = slVal('pm-ratio');
+  }
+  $('sv-pm-ratio').textContent = actualPmRatio.toFixed(1) + '%';
+  $('pm-ratio').value = Math.min(70, Math.round(actualPmRatio));
+
+  const pmKg   = (ndWeight * actualPmRatio / 100) / 1000;
+  const cIng   = pmKg * pm.costPerKg * (1 + yieldLoss);
+  const cPmMfg = pmKg * slVal('pm-mfg') * (1 + yieldLoss);
+  const ndBundlesC = +(($('nd-bundles') && $('nd-bundles').value) || 6);
+  const cNdMfg_b1 = slVal('nd-mfg') * 1;          // 看板1：單塊麵體
+  const cNdMfg_b2 = slVal('nd-mfg') * ndBundlesC; // 看板2：每包 n 束
+  const cBag   = slVal('nd-bag');
+  const cSauce = ckEn('ck-sauce') ? slVal('sauce-cost') : 0;
+  const cBox   = slVal('box-cost') / (slVal('box-qty') || 12);
+
+  // 纖維食材成本（按每包乾麵克數中纖維佔比計）
+  let cFiber = 0;
+  if (formula) {
+    const bF2  = slVal('batch-flour') || 1000;
+    const C312x  = ckEn('en-312f') ? slVal('amt-312f') : 0;
+    const C7000x = ckEn('en-7000') ? slVal('amt-7000') : 0;
+    const bSalt2 = bF2 * slVal('salt-f') / 100;
+    const dryTot2 = formula.P + bF2 + C312x + C7000x + bSalt2;
+    if (dryTot2 > 0) {
+      const perPack312  = C312x  / dryTot2 * ndWeight / 1000 * slVal('312f-p');
+      const perPack7000 = C7000x / dryTot2 * ndWeight / 1000 * slVal('7000-p');
+      cFiber = (perPack312 + perPack7000) * (1 + yieldLoss);
+    }
+  }
+
+  // 看板1 每包總成本（單塊）
+  const totalCost = cIng + cPmMfg + cNdMfg_b1 + cBag + cSauce + cBox + cFiber;
+  // 成本面板顯示：依目前 activeBoard 選擇代工費
+  const cNdMfg_disp = activeBoard === 1 ? cNdMfg_b1 : cNdMfg_b2;
+
+  $('c-ing').textContent    = cIng.toFixed(2)    + ' 元';
+  $('c-pm-mfg').textContent = cPmMfg.toFixed(2)  + ' 元';
+  $('c-nd-mfg').textContent = cNdMfg_disp.toFixed(2) + ' 元';
+  $('c-bag').textContent    = cBag.toFixed(2)     + ' 元';
+  $('c-sauce').textContent  = cSauce.toFixed(2)   + ' 元';
+  $('c-box').textContent    = cBox.toFixed(2)     + ' 元';
+  if ($('c-fiber')) $('c-fiber').textContent = cFiber.toFixed(2) + ' 元';
+  $('c-total').textContent  = totalCost.toFixed(2) + ' 元';
+
+  // ── 看板2 成本（無醬料，× ndBundles 束/包） ─────────────────
+  const b2PackCost    = cIng + cPmMfg + cNdMfg_b2 + cBag + cBox + cFiber;
+  const b2BundleCost  = b2PackCost * 6;
+  $('b2-pack-cost').textContent         = b2PackCost.toFixed(2)   + ' 元';
+  $('b2-bundle-total-cost').textContent = b2BundleCost.toFixed(2) + ' 元';
+
+  // ── 看板1 定價分析 ───────────────────────────────────────
+  const price = slVal('sell-price');
+  $('sv-price').textContent = price + ' 元';
+  const fee = feeCalc(price);
+  $('fee-shopee-amt').textContent = ckEn('ck-shopee') ? `-${fee.shopee.toFixed(1)}元` : '';
+  $('fee-ads-amt').textContent    = ckEn('ck-ads')    ? `-${fee.ads.toFixed(1)}元`    : '';
+  $('fee-tax-amt').textContent    = `-${(price / 1.05 * 0.05).toFixed(1)}元`;
+
+  const netCash   = fee.net;
+  const profit1   = netCash - totalCost;
+  const profRate  = price > 0 ? (profit1 / price * 100) : 0;
+  const deductRate = (ckEn('ck-shopee') ? 0.125 : 0) + (1/1.05*0.05) + (ckEn('ck-ads') ? 0.22 : 0);
+  const beven     = (1 - deductRate) > 0 ? totalCost / (1 - deductRate) : 9999;
+
+  $('net-cash').textContent    = netCash.toFixed(2)   + ' 元';
+  $('pr-cost').textContent     = totalCost.toFixed(2) + ' 元';
+  $('net-profit').textContent  = profit1.toFixed(2)   + ' 元';
+  $('net-profit').style.color  = profit1 >= 0 ? 'var(--green)' : 'var(--red)';
+  $('profit-rate').textContent = profRate.toFixed(1)  + '%';
+  $('breakeven').textContent   = Math.ceil(beven)     + ' 元';
+
+  // 費用比例條（看板1）
+  const pBase = price > 0 ? price : 1;
+  const setBar = (id, w, txt) => {
+    const el = $(id);
+    el.style.width   = Math.max(0, w / pBase * 100) + '%';
+    el.textContent   = w > 2 ? txt : '';
+  };
+  setBar('fb-cost',   totalCost,                     `成本${totalCost.toFixed(0)}`);
+  setBar('fb-shop',   fee.shopee,                    `蝦${fee.shopee.toFixed(0)}`);
+  setBar('fb-tax',    price / 1.05 * 0.05,           `稅${(price/1.05*0.05).toFixed(0)}`);
+  setBar('fb-ads',    fee.ads,                       `廣${fee.ads.toFixed(0)}`);
+  setBar('fb-profit', Math.max(0, profit1),          `利${profit1.toFixed(0)}`);
+
+  // 三個比價卡（看板1）
+  [[50,'p50','pc50'],[60,'p60','pc60'],[80,'p80','pc80']].forEach(([sp, pid, cid]) => {
+    const f  = feeCalc(sp);
+    const pr = f.net - totalCost;
+    $(pid + 'n').textContent = pr.toFixed(1) + ' 元';
+    $(pid + 'n').style.color = pr >= 0 ? 'var(--green)' : 'var(--red)';
+    $(pid + 's').textContent = pr >= 0 ? '✓ 獲利' : '✗ 虧損';
+    $(pid + 's').style.color = pr >= 0 ? 'var(--green)' : 'var(--red)';
+    $(cid).style.borderColor = pr >= 0 ? 'var(--green)' : 'var(--red)';
+  });
+
+  // 建議框（看板1）
+  const abox = $('advice-box');
+  if (profit1 < 0) {
+    abox.innerHTML = `<div class="alert-box" style="background:rgba(255,92,92,.1);border-color:var(--red);color:var(--red);">⚠ 當前定價低於損益平衡點 ${Math.ceil(beven)} 元，建議調高售價或降低成本。</div>`;
+  } else if (profRate < 20) {
+    abox.innerHTML = `<div class="alert-box" style="background:rgba(255,211,61,.08);border-color:var(--yellow);color:var(--yellow);">💡 淨利率 ${profRate.toFixed(1)}%，建議目標 30% 以上。損益平衡 ${Math.ceil(beven)} 元。</div>`;
+  } else {
+    abox.innerHTML = `<div class="alert-box" style="background:rgba(34,211,160,.08);border-color:var(--green);color:var(--green);">✓ 淨利率 ${profRate.toFixed(1)}%，健康獲利！損益平衡 ${Math.ceil(beven)} 元。</div>`;
+  }
+
+  // ── 看板2 定價分析 ───────────────────────────────────────
+  const bundlePrice = slVal('bundle-price');
+  $('sv-bundle-price').textContent = bundlePrice.toLocaleString() + ' 元';
+  const f2 = feeCalcB2(bundlePrice);
+  $('fee-shopee-b2').textContent = ckEn('ck-shopee-b2') ? `-${f2.shopee.toFixed(0)}元` : '';
+  $('fee-ads-b2').textContent    = ckEn('ck-ads-b2')    ? `-${f2.ads.toFixed(0)}元`    : '';
+  $('fee-tax-b2').textContent    = `-${(bundlePrice / 1.05 * 0.05).toFixed(0)}元`;
+
+  const b2NetCash  = f2.net;
+  const b2Profit   = b2NetCash - b2BundleCost;
+  const b2ProfRate = bundlePrice > 0 ? (b2Profit / bundlePrice * 100) : 0;
+  const dr2        = (ckEn('ck-shopee-b2')?0.125:0) + (1/1.05*0.05) + (ckEn('ck-ads-b2')?0.22:0);
+  const b2BEven    = (1 - dr2) > 0 ? b2BundleCost / (1 - dr2) : 9999;
+
+  $('b2-net-cash').textContent    = b2NetCash.toFixed(0)     + ' 元';
+  $('b2-bundle-cost').textContent = b2BundleCost.toFixed(2)  + ' 元';
+  $('b2-net-profit').textContent  = b2Profit.toFixed(2)      + ' 元';
+  $('b2-net-profit').style.color  = b2Profit >= 0 ? 'var(--green)' : 'var(--red)';
+  $('b2-profit-rate').textContent = b2ProfRate.toFixed(1)    + '%';
+  $('b2-per-pack').textContent    = (bundlePrice / 6).toFixed(0)  + ' 元/包';
+  $('b2-per-serving').textContent = (bundlePrice / 36).toFixed(1) + ' 元/份';
+  $('b2-breakeven').textContent   = Math.ceil(b2BEven)       + ' 元';
+
+  // 費用比例條（看板2）
+  const bp = bundlePrice > 0 ? bundlePrice : 1;
+  const sb2 = (id, w, txt) => {
+    const el = $(id);
+    el.style.width = Math.max(0, w / bp * 100) + '%';
+    el.textContent = w > 10 ? txt : '';
+  };
+  sb2('fb2-cost',   b2BundleCost,              `成本${b2BundleCost.toFixed(0)}`);
+  sb2('fb2-shop',   f2.shopee,                 `蝦${f2.shopee.toFixed(0)}`);
+  sb2('fb2-tax',    bundlePrice / 1.05 * 0.05, `稅${(bundlePrice/1.05*0.05).toFixed(0)}`);
+  sb2('fb2-ads',    f2.ads,                    `廣${f2.ads.toFixed(0)}`);
+  sb2('fb2-profit', Math.max(0, b2Profit),     `利${b2Profit.toFixed(0)}`);
+
+  // 三個比價卡（看板2）
+  [[1199,'b2p1','b2pc1'],[1499,'b2p2','b2pc2'],[1799,'b2p3','b2pc3']].forEach(([sp, pid, cid]) => {
+    const f  = feeCalcB2(sp);
+    const pr = f.net - b2BundleCost;
+    $(pid + 'n').textContent = pr.toFixed(0) + ' 元';
+    $(pid + 'n').style.color = pr >= 0 ? 'var(--green)' : 'var(--red)';
+    $(pid + 's').textContent = pr >= 0 ? '✓ 獲利' : '✗ 虧損';
+    $(pid + 's').style.color = pr >= 0 ? 'var(--green)' : 'var(--red)';
+    $(cid).style.borderColor = pr >= 0 ? 'var(--green)' : 'var(--red)';
+  });
+
+  // 建議框（看板2）
+  const ab2 = $('b2-advice-box');
+  if (b2Profit < 0) {
+    ab2.innerHTML = `<div class="alert-box" style="background:rgba(255,92,92,.1);border-color:var(--red);color:var(--red);">⚠ 組合定價低於損益平衡 ${Math.ceil(b2BEven)} 元，建議調高售價。</div>`;
+  } else if (b2ProfRate < 20) {
+    ab2.innerHTML = `<div class="alert-box" style="background:rgba(255,211,61,.08);border-color:var(--yellow);color:var(--yellow);">💡 淨利率 ${b2ProfRate.toFixed(1)}%，建議目標30%+。損益平衡 ${Math.ceil(b2BEven)} 元。</div>`;
+  } else {
+    ab2.innerHTML = `<div class="alert-box" style="background:rgba(34,211,160,.08);border-color:var(--green);color:var(--green);">✓ 淨利率 ${b2ProfRate.toFixed(1)}%，健康獲利！損益平衡 ${Math.ceil(b2BEven)} 元。</div>`;
+  }
+}
+
+// ── 頁面切換（含第3頁行銷文件） ────────────────────────────
+function switchPage(n) {
+  $('page1').style.display = n === 1 ? '' : 'none';
+  $('page2').style.display = n === 2 ? '' : 'none';
+  $('page3').style.display = n === 3 ? '' : 'none';
+  document.querySelectorAll('.tab-btn').forEach((b, i) =>
+    b.classList.toggle('active', i === n - 1)
+  );
+  if (n === 3) {
+    renderMktSegments();
+    renderChecklist();
+    renderPlan(activePlan);
+  }
+}
+
+// ── 看板切換 ────────────────────────────────────────────────
+function switchBoard(n) {
+  activeBoard = n;
+  $('board1-pricing').style.display = n === 1 ? '' : 'none';
+  $('board2-pricing').style.display = n === 2 ? '' : 'none';
+  $('b2-cost-card').style.display   = n === 2 ? '' : 'none';
+  // 只切換頂部兩個看板切換按鈕，不影響 page3 的方案按鈕
+  const boardTabs = document.querySelector('.board-tabs');
+  if (boardTabs) {
+    boardTabs.querySelectorAll('.board-tab-btn').forEach((b, i) =>
+      b.classList.toggle('active', i === n - 1)
+    );
+  }
+  $('ck-sauce').checked = (n === 1);
+  $('sauce-sg').style.opacity = (n === 1) ? '1' : '.35';
+  calc();
+}
+
+// ── Excel 匯出 ──────────────────────────────────────────────
+function exportExcel() {
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: 定價分析
+  const ws1 = XLSX.utils.aoa_to_sheet([
+    ['NoodleNoodle 高蛋白纖維麵 決策系統 v4'],
+    ['匯出日期', new Date().toLocaleDateString('zh-TW')],
+    [],
+    ['【看板1 · 風味麵（含醬包）】'],
+    ['售價', $('sv-price').textContent, '每包總成本', $('c-total').textContent],
+    ['扣費後現金回流', $('net-cash').textContent, '每包淨利潤', $('net-profit').textContent],
+    ['淨利率', $('profit-rate').textContent, '損益平衡最低售價', $('breakeven').textContent],
+    [],
+    ['【看板2 · 純麵6包組（無醬包）】'],
+    ['組合售價', $('sv-bundle-price').textContent, '6包組合總成本', $('b2-bundle-total-cost').textContent],
+    ['整組淨利潤', $('b2-net-profit').textContent, '淨利率', $('b2-profit-rate').textContent],
+    ['損益平衡', $('b2-breakeven').textContent, '等效每包售價', $('b2-per-pack').textContent],
+  ]);
+  XLSX.utils.book_append_sheet(wb, ws1, '定價分析');
+
+  // Sheet 2: 成本結構
+  const ws2 = XLSX.utils.aoa_to_sheet([
+    ['項目', '金額（元）'],
+    ['預拌粉食材', $('c-ing').textContent],
+    ['預拌粉代工', $('c-pm-mfg').textContent],
+    ['麵塊代工',   $('c-nd-mfg').textContent],
+    ['麵體包裝袋', $('c-bag').textContent],
+    ['醬料',       $('c-sauce').textContent],
+    ['紙箱分攤',   $('c-box').textContent],
+    ['纖維添加物', $('c-fiber') ? $('c-fiber').textContent : '0'],
+    ['每包總成本', $('c-total').textContent],
+  ]);
+  XLSX.utils.book_append_sheet(wb, ws2, '成本結構');
+
+  // Sheet 3: 配方總表
+  const rows = Array.from(document.querySelectorAll('#formula-tbody tr'));
+  const ws3data = [['成分', '重量(g)', '烘焙百分比', '佔濕麵糰%', '蛋白質(g)', '纖維(g)']];
+  rows.forEach(r => {
+    const cells = Array.from(r.querySelectorAll('td'))
+      .map(c => c.textContent.trim().split('\n')[0]);
+    ws3data.push(cells);
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws3data), '配方總表');
+
+  // Sheet 4: 營養標示
+  const ws4 = XLSX.utils.aoa_to_sheet([
+    ['營養素', '每100g乾麵', '每份(80g)'],
+    ['熱量 kcal',  $('nt-cal').textContent,    $('nt-cal8').textContent],
+    ['蛋白質 g',   $('nt-prot').textContent,   $('nt-prot8').textContent],
+    ['脂肪 g',     $('nt-fat').textContent,    $('nt-fat8').textContent],
+    ['碳水化合物 g', $('nt-carb').textContent,  $('nt-carb8').textContent],
+    ['　糖 g',        $('nt-sugar').textContent, $('nt-sugar8').textContent],
+    ['膳食纖維 g',    $('nt-fiber').textContent, $('nt-fiber8').textContent],
+    ['鈉 mg',         $('nt-sodium').textContent,$('nt-sodium8').textContent],
+  ]);
+  XLSX.utils.book_append_sheet(wb, ws4, '營養標示');
+  XLSX.writeFile(wb, 'NoodleNoodle決策分析.xlsx');
+}
+
+calc();
+</script>
+</body>
+</html>

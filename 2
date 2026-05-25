@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FiberNoodle 拆股分利互動工具</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang TC', 'Noto Sans TC', sans-serif;
+  background: #0f1117;
+  color: #e8eaf0;
+  min-height: 100vh;
+  padding: 24px 16px 60px;
+}
+h1.page-title {
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+  background: linear-gradient(135deg, #7F77DD, #1D9E75);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.page-sub {
+  text-align: center;
+  color: #7a8090;
+  font-size: 0.83rem;
+  margin-bottom: 32px;
+}
+.wrap { max-width: 900px; margin: 0 auto; }
+.section { margin-bottom: 36px; }
+.section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #c0c4d8;
+  border-left: 4px solid #7F77DD;
+  padding-left: 12px;
+  margin-bottom: 14px;
+}
+.card {
+  background: #181c27;
+  border: 1px solid #252a38;
+  border-radius: 14px;
+  padding: 22px;
+}
+
+/* ── MILESTONE BAR ── */
+.milestone-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+@media(max-width:640px){ .milestone-grid { grid-template-columns: repeat(2,1fr); } }
+.ms-card {
+  background: #181c27;
+  border: 1px solid #252a38;
+  border-radius: 12px;
+  padding: 14px 12px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.ms-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+.ms1::before { background: #3a4060; }
+.ms2::before { background: #1D9E75; }
+.ms3::before { background: #7F77DD; }
+.ms4::before { background: #D85A30; }
+.ms-stage { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #6a7090; margin-bottom: 4px; }
+.ms-revenue { font-size: 1rem; font-weight: 800; color: #e0e4f0; margin-bottom: 2px; }
+.ms-monthly { font-size: 0.72rem; color: #8090a8; margin-bottom: 6px; }
+.ms-badge {
+  display: inline-block;
+  font-size: 0.64rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 700;
+}
+.badge-locked { background:#1a1f2c; color:#4a5068; border:1px solid #252a38; }
+.badge-active { background:#1D9E7520; color:#35c494; border:1px solid #1D9E7550; }
+
+/* ── EQUITY ── */
+.equity-layout { display:flex; align-items:center; gap:28px; flex-wrap:wrap; }
+.donut-wrap { flex:0 0 210px; height:210px; position:relative; }
+.donut-center {
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  text-align:center; pointer-events:none;
+}
+.donut-center span { display:block; font-size:0.68rem; color:#7a8090; }
+.donut-center strong { font-size:1.05rem; color:#e8eaf0; }
+.equity-legend { flex:1; min-width:200px; display:flex; flex-direction:column; gap:10px; }
+.legend-item { display:flex; align-items:center; gap:10px; }
+.legend-dot { width:13px; height:13px; border-radius:50%; flex-shrink:0; }
+.legend-name { font-size:0.88rem; font-weight:600; }
+.legend-detail { font-size:0.72rem; color:#6a7090; }
+.legend-pct { font-size:1.15rem; font-weight:800; min-width:50px; text-align:right; }
+
+/* ── FLOW ── */
+.flow-row {
+  display:flex; align-items:center; gap:0;
+  flex-wrap:wrap; justify-content:center; margin-bottom:18px;
+}
+.flow-box {
+  background:#1e2436; border:1px solid #2e3450;
+  border-radius:10px; padding:12px 18px; text-align:center; min-width:105px;
+}
+.fb-label { font-size:0.68rem; color:#7a8090; }
+.fb-val { font-size:1.1rem; font-weight:700; color:#e8eaf0; }
+.flow-col { display:flex; flex-direction:column; align-items:center; gap:1px; padding:0 4px; }
+.flow-arrow { font-size:1.3rem; color:#3a4060; }
+.flow-op { font-size:0.7rem; color:#7F77DD; }
+.flow-note {
+  display:flex; gap:16px; flex-wrap:wrap;
+  justify-content:center; font-size:0.77rem; color:#6a7090;
+  padding: 10px 14px;
+  background: #1a1f30;
+  border-radius:8px;
+  margin-top:4px;
+}
+
+/* ── WEIGHT TABLE ── */
+.weight-table { width:100%; border-collapse:collapse; font-size:0.83rem; }
+.weight-table th {
+  padding:8px 12px; text-align:center;
+  font-size:0.72rem; font-weight:700;
+  color:#7a8090; text-transform:uppercase; letter-spacing:.04em;
+  border-bottom:1px solid #252a38;
+}
+.weight-table td {
+  padding:10px 12px; text-align:center;
+  border-bottom:1px solid #1e2336;
+}
+.weight-table tr:last-child td { border-bottom:none; }
+.weight-table .row-stage { font-weight:700; text-align:left; color:#a0a8c0; }
+.wt-pill {
+  display:inline-block;
+  padding:3px 10px; border-radius:20px;
+  font-weight:700; font-size:0.8rem;
+}
+.wt-locked { background:#1a1f2c; color:#4a5068; }
+
+/* ── SCENARIOS ── */
+.filter-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+.filter-btn {
+  background:#1e2436; border:1px solid #2e3450;
+  color:#8090a8; border-radius:6px;
+  padding:5px 12px; font-size:0.75rem; cursor:pointer;
+  transition:all 0.15s; font-weight:600;
+}
+.filter-btn:hover { border-color:#7F77DD44; color:#b0b8d0; }
+.filter-btn.active { background:#7F77DD22; border-color:#7F77DD; color:#9d97e8; }
+
+.sc-grid {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+}
+@media(max-width:620px){ .sc-grid { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:400px){ .sc-grid { grid-template-columns:1fr; } }
+
+.sc-card {
+  background:#1e2436; border:1px solid #252a38;
+  border-radius:11px; padding:13px 12px;
+  cursor:pointer; transition:all 0.15s;
+  position:relative;
+}
+.sc-card:hover { border-color:#4a5080; transform:translateY(-2px); box-shadow:0 4px 16px #00000040; }
+.sc-card.selected { border-color:#7F77DD; background:#7F77DD0e; }
+.sc-emoji { font-size:1.4rem; margin-bottom:5px; display:block; }
+.sc-tag {
+  display:inline-block; font-size:0.63rem;
+  padding:2px 7px; border-radius:4px;
+  font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+  margin-bottom:5px;
+}
+.sc-title { font-size:0.86rem; font-weight:700; margin-bottom:3px; line-height:1.3; }
+.sc-amt { font-size:0.73rem; color:#6a7090; margin-bottom:2px; }
+.sc-hint { font-size:0.65rem; color:#4a5068; }
+.sc-card.hidden { display:none; }
+
+/* ── CALCULATOR ── */
+.calc-top {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:18px; margin-bottom:18px;
+}
+@media(max-width:520px){ .calc-top { grid-template-columns:1fr; } }
+.ctrl-label {
+  display:block; font-size:0.7rem; color:#7a8090;
+  margin-bottom:6px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.05em;
+}
+input[type=range] { width:100%; accent-color:#7F77DD; cursor:pointer; }
+select {
+  width:100%; background:#1e2436;
+  border:1px solid #2e3450; color:#e8eaf0;
+  border-radius:8px; padding:8px 12px;
+  font-size:0.88rem; cursor:pointer; outline:none;
+}
+.slider-val { font-size:0.82rem; color:#7F77DD; font-weight:700; margin-top:4px; }
+
+.pool-bar {
+  background:#1a1f30; border-radius:8px;
+  padding:12px 16px; margin-bottom:16px;
+  display:flex; gap:20px; flex-wrap:wrap; align-items:center;
+}
+.pb-item { font-size:0.8rem; }
+.pb-item span { color:#6a7090; }
+.pb-item strong { color:#c8cce0; }
+
+.split-bar {
+  height:26px; border-radius:6px; overflow:hidden;
+  display:flex; margin-bottom:16px;
+}
+.split-attack {
+  background:#D85A30; display:flex; align-items:center;
+  justify-content:center; font-size:0.68rem; font-weight:700;
+  color:white; transition:width .4s ease;
+  min-width:0; overflow:hidden; white-space:nowrap; padding:0 6px;
+}
+.split-defense {
+  background:#1D9E75; flex:1; display:flex; align-items:center;
+  justify-content:center; font-size:0.68rem; font-weight:700;
+  color:white; white-space:nowrap; padding:0 6px;
+}
+
+.result-grid {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:10px;
+}
+@media(max-width:580px){ .result-grid { grid-template-columns:repeat(2,1fr); } }
+.result-card {
+  background:#1e2436; border:1px solid #252a38;
+  border-radius:10px; padding:13px 10px; text-align:center;
+  transition:border-color .2s;
+}
+.rc-role { font-size:0.7rem; color:#8090a8; margin-bottom:4px; }
+.rc-total { font-size:1.25rem; font-weight:800; margin-bottom:4px; }
+.rc-sub { font-size:0.67rem; color:#5a6080; line-height:1.5; }
+.rc-sub span { display:block; }
+
+.person-rows { display:flex; flex-direction:column; gap:7px; margin-top:14px; }
+.person-row { display:flex; align-items:center; gap:8px; }
+.pr-name { font-size:0.78rem; font-weight:700; min-width:56px; }
+.pr-bar-wrap { flex:1; height:20px; background:#12151e; border-radius:5px; overflow:hidden; }
+.pr-bar {
+  height:100%; border-radius:5px;
+  display:flex; align-items:center; padding-left:7px;
+  font-size:0.65rem; font-weight:700; color:white;
+  transition:width .4s ease; white-space:nowrap; overflow:hidden; min-width:8px;
+}
+.pr-amt { font-size:0.82rem; font-weight:800; min-width:68px; text-align:right; }
+.pr-bk { font-size:0.65rem; color:#5a6080; min-width:96px; text-align:right; }
+
+/* colors */
+.c-founder   { color:#7F77DD; } .bg-founder   { background:#7F77DD; }
+.c-marketing { color:#1D9E75; } .bg-marketing { background:#1D9E75; }
+.c-sales     { color:#D85A30; } .bg-sales     { background:#D85A30; }
+.c-rd        { color:#BA7517; } .bg-rd        { background:#BA7517; }
+.tag-founder   { background:#7F77DD22; color:#9d97e8; }
+.tag-marketing { background:#1D9E7522; color:#35c494; }
+.tag-sales     { background:#D85A3022; color:#e87a55; }
+.tag-rd        { background:#BA751722; color:#d4951e; }
+.tag-all       { background:#2e344022; color:#7a8090; }
+.pill-founder   { background:#7F77DD22; color:#9d97e8; }
+.pill-marketing { background:#1D9E7522; color:#35c494; }
+.pill-sales     { background:#D85A3022; color:#e87a55; }
+.pill-rd        { background:#BA751722; color:#d4951e; }
+
+footer { text-align:center; margin-top:48px; color:#3a4060; font-size:0.73rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1 class="page-title">🍜 FiberNoodle 拆股分利互動工具</h1>
+<p class="page-sub">51 / 49 固定持股 · 雙軌獎金制（進攻 ＋ 防守）· 真實情境試算</p>
+
+<!-- ══ 里程碑 ══ -->
+<div class="section">
+  <div class="section-title">① 四階段目標里程碑</div>
+  <div class="milestone-grid">
+    <div class="ms-card ms1">
+      <div class="ms-stage">第一階段</div>
+      <div class="ms-revenue">年銷 0–300萬</div>
+      <div class="ms-monthly">月銷目標 25萬</div>
+      <span class="ms-badge badge-locked">🔒 獎金池未啟動</span>
+    </div>
+    <div class="ms-card ms2">
+      <div class="ms-stage">第二階段</div>
+      <div class="ms-revenue">年銷 300–600萬</div>
+      <div class="ms-monthly">月銷目標 50萬</div>
+      <span class="ms-badge badge-active">✦ 獎金池 NT$37,500/月</span>
+    </div>
+    <div class="ms-card ms3">
+      <div class="ms-stage">第三階段</div>
+      <div class="ms-revenue">年銷 600–1,200萬</div>
+      <div class="ms-monthly">月銷目標 85萬</div>
+      <span class="ms-badge badge-active">✦ 獎金池 NT$63,750/月</span>
+    </div>
+    <div class="ms-card ms4">
+      <div class="ms-stage">第四階段</div>
+      <div class="ms-revenue">年銷 1,200萬＋</div>
+      <div class="ms-monthly">月銷目標 165萬</div>
+      <span class="ms-badge badge-active">✦ 獎金池 NT$123,750/月</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 持股 ══ -->
+<div class="section">
+  <div class="section-title">② 持股結構</div>
+  <div class="card">
+    <div class="equity-layout">
+      <div class="donut-wrap">
+        <canvas id="donutChart" width="210" height="210"></canvas>
+        <div class="donut-center"><span>4 位合夥人</span><strong>100%</strong></div>
+      </div>
+      <div class="equity-legend">
+        <div class="legend-item">
+          <div class="legend-dot bg-founder"></div>
+          <div style="flex:1">
+            <div class="legend-name c-founder">創始人</div>
+            <div class="legend-detail">決策主導 · 資本擔保 · 供應鏈管理</div>
+          </div>
+          <div class="legend-pct c-founder">51%</div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot bg-marketing"></div>
+          <div style="flex:1">
+            <div class="legend-name c-marketing">行銷夥伴</div>
+            <div class="legend-detail">品牌 · 內容 · 流量 · 網紅合作</div>
+          </div>
+          <div class="legend-pct c-marketing">16.3%</div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot bg-sales"></div>
+          <div style="flex:1">
+            <div class="legend-name c-sales">業務夥伴</div>
+            <div class="legend-detail">通路開發 · B2B · 大客戶 · 聯名</div>
+          </div>
+          <div class="legend-pct c-sales">16.3%</div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot bg-rd"></div>
+          <div style="flex:1">
+            <div class="legend-name c-rd">研發夥伴</div>
+            <div class="legend-detail">配方 · 品管 · HACCP · 客製 SKU</div>
+          </div>
+          <div class="legend-pct c-rd">16.4%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 公式 ══ -->
+<div class="section">
+  <div class="section-title">③ 獎金池公式</div>
+  <div class="card">
+    <div class="flow-row">
+      <div class="flow-box">
+        <div class="fb-label">月銷售額</div>
+        <div class="fb-val" id="flowRev">NT$85萬</div>
+      </div>
+      <div class="flow-col"><div class="flow-arrow">→</div><div class="flow-op">×15%毛利</div></div>
+      <div class="flow-box">
+        <div class="fb-label">估算毛利</div>
+        <div class="fb-val" id="flowProfit">NT$127,500</div>
+      </div>
+      <div class="flow-col"><div class="flow-arrow">→</div><div class="flow-op">÷2 留存50%</div></div>
+      <div class="flow-box" style="border-color:#7F77DD55">
+        <div class="fb-label">可分配獎金池</div>
+        <div class="fb-val c-founder" id="flowPool">NT$63,750</div>
+      </div>
+    </div>
+    <div class="flow-note">
+      <span>⚡ <strong>進攻池</strong>：私海訂單 × 60% → 接單人獨享</span>
+      <span>🛡 <strong>防守池</strong>：私海 × 40% ＋ 公海 × 100% → 按權重四人共分</span>
+      <span>⚠ <strong>借用公司資源開發私海</strong>：進攻比例降為 20%，防守提升至 80%</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 權重對照 ══ -->
+<div class="section">
+  <div class="section-title">④ 防守池分配權重（按階段）</div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table class="weight-table">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding-left:20px;">階段</th>
+          <th style="color:#7F77DD">創始人</th>
+          <th style="color:#1D9E75">行銷夥伴</th>
+          <th style="color:#D85A30">業務夥伴</th>
+          <th style="color:#BA7517">研發夥伴</th>
+          <th>月銷目標</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="row-stage" style="padding-left:20px;">第一階段</td>
+          <td colspan="4" style="color:#4a5068;font-size:0.78rem;">🔒 獎金池尚未啟動，毛利 100% 留存為週轉金</td>
+          <td style="color:#4a5068;font-size:0.78rem;">25萬/月</td>
+        </tr>
+        <tr>
+          <td class="row-stage" style="padding-left:20px;">第二階段</td>
+          <td><span class="wt-pill pill-founder">35%</span></td>
+          <td><span class="wt-pill pill-marketing">35%</span></td>
+          <td><span class="wt-pill pill-sales">15%</span></td>
+          <td><span class="wt-pill pill-rd">15%</span></td>
+          <td style="color:#a0a8c0;font-size:0.8rem;">~50萬/月</td>
+        </tr>
+        <tr>
+          <td class="row-stage" style="padding-left:20px;">第三階段</td>
+          <td><span class="wt-pill pill-founder">25%</span></td>
+          <td><span class="wt-pill pill-marketing">35%</span></td>
+          <td><span class="wt-pill pill-sales">20%</span></td>
+          <td><span class="wt-pill pill-rd">20%</span></td>
+          <td style="color:#a0a8c0;font-size:0.8rem;">~85萬/月</td>
+        </tr>
+        <tr>
+          <td class="row-stage" style="padding-left:20px;">第四階段</td>
+          <td><span class="wt-pill pill-founder">20%</span></td>
+          <td><span class="wt-pill pill-marketing">30%</span></td>
+          <td><span class="wt-pill pill-sales">25%</span></td>
+          <td><span class="wt-pill pill-rd">25%</span></td>
+          <td style="color:#a0a8c0;font-size:0.8rem;">~165萬/月</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ 情境 ══ -->
+<div class="section">
+  <div class="section-title">⑤ 真實情境選擇（點選後自動帶入試算機）</div>
+
+  <div class="filter-tabs">
+    <button class="filter-btn active" onclick="filterScenarios('all',this)">全部情境</button>
+    <button class="filter-btn" onclick="filterScenarios('founder',this)">創始人接單</button>
+    <button class="filter-btn" onclick="filterScenarios('marketing',this)">行銷接單</button>
+    <button class="filter-btn" onclick="filterScenarios('sales',this)">業務接單</button>
+    <button class="filter-btn" onclick="filterScenarios('rd',this)">研發接單</button>
+    <button class="filter-btn" onclick="filterScenarios('none',this)">全公海</button>
+  </div>
+
+  <div class="sc-grid" id="scenarioGrid">
+    <!-- JS generates cards -->
+  </div>
+</div>
+
+<!-- ══ 試算機 ══ -->
+<div class="section">
+  <div class="section-title">⑥ 動態試算機</div>
+  <div class="card">
+    <div class="calc-top">
+      <div>
+        <label class="ctrl-label">月銷售額</label>
+        <input type="range" id="revenueSlider" min="200000" max="2000000" step="50000" value="850000"
+          oninput="updateCalc()">
+        <div class="slider-val" id="revenueLabel">NT$ 850,000</div>
+      </div>
+      <div>
+        <label class="ctrl-label">當前階段（防守池權重）</label>
+        <select id="stageSelect" onchange="updateCalc()">
+          <option value="2">第二階段（創35% 行35% 業15% 研15%）</option>
+          <option value="3" selected>第三階段（創25% 行35% 業20% 研20%）</option>
+          <option value="4">第四階段（創20% 行30% 業25% 研25%）</option>
+        </select>
+      </div>
+      <div>
+        <label class="ctrl-label">私海接單人</label>
+        <select id="whoSelect" onchange="updateCalc()">
+          <option value="none">全公海（無私海訂單）</option>
+          <option value="founder">創始人</option>
+          <option value="marketing">行銷夥伴</option>
+          <option value="sales">業務夥伴</option>
+          <option value="rd">研發夥伴</option>
+        </select>
+      </div>
+      <div>
+        <label class="ctrl-label">私海佔獎金池比例</label>
+        <input type="range" id="privateSlider" min="0" max="90" step="5" value="40"
+          oninput="updateCalc()">
+        <div class="slider-val" id="privateLabel">40%（NT$25,500）</div>
+      </div>
+    </div>
+
+    <!-- pool summary -->
+    <div class="pool-bar">
+      <div class="pb-item"><span>獎金池 </span><strong id="summPool">—</strong></div>
+      <div class="pb-item"><span>⚡ 進攻池 </span><strong id="summAttack" class="c-sales">—</strong></div>
+      <div class="pb-item"><span>🛡 防守池 </span><strong id="summDefense" class="c-marketing">—</strong></div>
+      <div class="pb-item" style="margin-left:auto;font-size:0.7rem;color:#5a6070" id="scLabel">（手動輸入）</div>
+    </div>
+
+    <!-- split bar -->
+    <div class="split-bar">
+      <div class="split-attack" id="splitAttack">⚡ —</div>
+      <div class="split-defense" id="splitDefense">🛡 —</div>
+    </div>
+
+    <!-- result cards -->
+    <div class="result-grid" id="resultGrid"></div>
+
+    <!-- bar chart -->
+    <div class="person-rows" id="personBars"></div>
+  </div>
+</div>
+
+<footer>FiberNoodle 合夥框架 · 雙軌獎金制精算版 · 僅供內部討論使用</footer>
+</div><!-- /wrap -->
+
+<script>
+// ── constants ─────────────────────────────────────────────────────────────────
+const C = {
+  founder:   { hex:'#7F77DD', label:'創始人',  tagCls:'tag-founder',   barCls:'bg-founder',   textCls:'c-founder'   },
+  marketing: { hex:'#1D9E75', label:'行銷夥伴', tagCls:'tag-marketing', barCls:'bg-marketing', textCls:'c-marketing' },
+  sales:     { hex:'#D85A30', label:'業務夥伴', tagCls:'tag-sales',     barCls:'bg-sales',     textCls:'c-sales'     },
+  rd:        { hex:'#BA7517', label:'研發夥伴', tagCls:'tag-rd',        barCls:'bg-rd',        textCls:'c-rd'        }
+};
+const ROLES = ['founder','marketing','sales','rd'];
+const WEIGHTS = {
+  2:{ founder:.35, marketing:.35, sales:.15, rd:.15 },
+  3:{ founder:.25, marketing:.35, sales:.20, rd:.20 },
+  4:{ founder:.20, marketing:.30, sales:.25, rd:.25 }
+};
+
+// ── scenarios ─────────────────────────────────────────────────────────────────
+// attacker: 'none' = full public sea
+// revenue: suggested default
+// privateAmt: absolute NT$ private sea pool amount
+// stageHint: display text for typical stage range
+const SCENARIOS = [
+  // ─ 行銷接單 ─
+  { id:'sc1',  emoji:'🎥', title:'美食網紅帶貨',       sub:'自媒體合作推廣訂單',       attacker:'marketing', revenue:500000,  privateAmt:15000, stageHint:'Stage 2+' },
+  { id:'sc2',  emoji:'🛒', title:'蝦皮聯盟通路',       sub:'私下談定通路協議',         attacker:'marketing', revenue:500000,  privateAmt:12000, stageHint:'Stage 2+' },
+  { id:'sc3',  emoji:'📡', title:'電台冠名廣告',       sub:'行銷自行接洽贊助案',       attacker:'marketing', revenue:1650000, privateAmt:70000, stageHint:'Stage 4'  },
+  { id:'sc4',  emoji:'📱', title:'頭部網紅直播帶貨',   sub:'百萬粉絲直播合作',         attacker:'marketing', revenue:850000,  privateAmt:30000, stageHint:'Stage 3+' },
+  // ─ 業務接單 ─
+  { id:'sc5',  emoji:'🚌', title:'遊覽車公司大宗採購', sub:'旅遊業者伴手禮訂單',       attacker:'sales',     revenue:850000,  privateAmt:35000, stageHint:'Stage 3+' },
+  { id:'sc6',  emoji:'🍽', title:'聯名餐廳包廂套餐',   sub:'餐廳掛名聯名麵條套餐',     attacker:'sales',     revenue:850000,  privateAmt:45000, stageHint:'Stage 3+' },
+  { id:'sc7',  emoji:'🎁', title:'旅遊伴手禮通路',     sub:'觀光局 / 伴手禮店鋪陳列', attacker:'sales',     revenue:1650000, privateAmt:90000, stageHint:'Stage 4'  },
+  { id:'sc8',  emoji:'🏢', title:'機關公務送禮採購',   sub:'政府機關 / 企業年節禮盒', attacker:'sales',     revenue:500000,  privateAmt:22000, stageHint:'Stage 2+' },
+  { id:'sc9',  emoji:'🏨', title:'飯店民宿早餐供應',   sub:'住宿業者長期供應合約',     attacker:'sales',     revenue:1650000, privateAmt:60000, stageHint:'Stage 3+' },
+  // ─ 研發接單 ─
+  { id:'sc10', emoji:'📻', title:'電台廠商禮品客製',   sub:'廣播廠商禮品客製 SKU',     attacker:'rd',        revenue:850000,  privateAmt:40000, stageHint:'Stage 3+' },
+  { id:'sc11', emoji:'🎒', title:'校園餐廳客製配方',   sub:'研發夥伴洽談校餐供應',     attacker:'rd',        revenue:850000,  privateAmt:28000, stageHint:'Stage 3+' },
+  // ─ 創始人接單 ─
+  { id:'sc12', emoji:'✈️', title:'外銷出口大單',       sub:'創始人搓合海外代理商',     attacker:'founder',   revenue:1650000, privateAmt:80000, stageHint:'Stage 4'  },
+  { id:'sc13', emoji:'🏪', title:'連鎖超市通路談判',   sub:'創始人直接洽談上架',       attacker:'founder',   revenue:1650000, privateAmt:100000,stageHint:'Stage 4'  },
+  // ─ 全公海 ─
+  { id:'sc14', emoji:'🌊', title:'平台廣告自然訂單',   sub:'蝦皮 / 官網廣告流量成交', attacker:'none',      revenue:500000,  privateAmt:0,     stageHint:'All'      },
+  { id:'sc15', emoji:'🔖', title:'Google SEO 自然搜尋',sub:'內容行銷帶來之自然流量',  attacker:'none',      revenue:850000,  privateAmt:0,     stageHint:'All'      }
+];
+
+let selectedScenarioId = null;
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+const fmt  = n => 'NT$' + Math.round(n).toLocaleString('zh-TW');
+const fmtK = n => n >= 10000 ? (n/10000).toFixed(0)+'萬' : n.toLocaleString();
+
+function calcDist(pool, privateAmt, attacker, weights) {
+  const attack  = attacker !== 'none' ? privateAmt * 0.6 : 0;
+  const pubPart = pool - (attacker !== 'none' ? privateAmt : 0);
+  const defPool = (attacker !== 'none' ? privateAmt * 0.4 : pool) + (attacker !== 'none' ? pubPart : 0);
+  // simplify: defensePool = pool - attack
+  const defensePool = pool - attack;
+  const result = {};
+  ROLES.forEach(r => {
+    result[r] = {
+      defense: defensePool * weights[r],
+      attack:  r === attacker ? attack : 0,
+      total:   defensePool * weights[r] + (r === attacker ? attack : 0)
+    };
+  });
+  return { attack, defensePool, result };
+}
+
+// ── donut chart ───────────────────────────────────────────────────────────────
+const ctx = document.getElementById('donutChart').getContext('2d');
+new Chart(ctx, {
+  type:'doughnut',
+  data:{
+    labels:['創始人 51%','行銷夥伴 16.3%','業務夥伴 16.3%','研發夥伴 16.4%'],
+    datasets:[{
+      data:[51,16.3,16.3,16.4],
+      backgroundColor:['#7F77DD','#1D9E75','#D85A30','#BA7517'],
+      borderColor:'#181c27', borderWidth:3, hoverOffset:6
+    }]
+  },
+  options:{
+    cutout:'62%',
+    plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c => ` ${c.label}` } } },
+    animation:{ animateRotate:true, duration:900 }
+  }
+});
+
+// ── render scenario cards ─────────────────────────────────────────────────────
+function buildScenarios() {
+  const grid = document.getElementById('scenarioGrid');
+  grid.innerHTML = SCENARIOS.map(sc => {
+    const a = sc.attacker;
+    const tagCls = a === 'none' ? 'tag-all' : C[a].tagCls;
+    const tagLabel = a === 'none' ? '全公海' : C[a].label + '接單';
+    const amtStr = a === 'none' ? '全數進防守池' : `私海 ${fmt(sc.privateAmt)}`;
+    return `<div class="sc-card" id="${sc.id}" data-attacker="${a}" onclick="selectScenario('${sc.id}')">
+      <span class="sc-emoji">${sc.emoji}</span>
+      <span class="sc-tag ${tagCls}">${tagLabel}</span>
+      <div class="sc-title">${sc.title}</div>
+      <div class="sc-amt">${amtStr} 進攻池</div>
+      <div class="sc-hint">建議月銷 ${fmtK(sc.revenue)} · ${sc.stageHint}</div>
+    </div>`;
+  }).join('');
+}
+buildScenarios();
+
+// ── filter ────────────────────────────────────────────────────────────────────
+function filterScenarios(role, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.sc-card').forEach(card => {
+    const att = card.dataset.attacker;
+    const show = role === 'all' || att === role;
+    card.classList.toggle('hidden', !show);
+  });
+}
+
+// ── select scenario → fill calculator ────────────────────────────────────────
+function selectScenario(id) {
+  const sc = SCENARIOS.find(s => s.id === id);
+  if (!sc) return;
+
+  // deselect all
+  document.querySelectorAll('.sc-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById(id).classList.add('selected');
+  selectedScenarioId = id;
+
+  // set revenue slider
+  document.getElementById('revenueSlider').value = sc.revenue;
+
+  // auto-suggest stage
+  if (sc.revenue <= 600000) document.getElementById('stageSelect').value = '2';
+  else if (sc.revenue <= 1200000) document.getElementById('stageSelect').value = '3';
+  else document.getElementById('stageSelect').value = '4';
+
+  // set attacker
+  document.getElementById('whoSelect').value = sc.attacker;
+
+  // set private sea % based on pool at scenario revenue
+  const pool = sc.revenue * 0.15 * 0.5;
+  const pct  = pool > 0 && sc.privateAmt > 0 ? Math.min(90, Math.round((sc.privateAmt / pool) * 100 / 5) * 5) : 0;
+  document.getElementById('privateSlider').value = pct;
+
+  document.getElementById('scLabel').textContent = `📌 ${sc.title}`;
+  updateCalc();
+  // smooth scroll to calculator
+  document.getElementById('revenueSlider').closest('.section').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+// ── update calculator ─────────────────────────────────────────────────────────
+function updateCalc() {
+  const revenue    = parseInt(document.getElementById('revenueSlider').value);
+  const stage      = parseInt(document.getElementById('stageSelect').value);
+  const attacker   = document.getElementById('whoSelect').value;
+  const pct        = parseInt(document.getElementById('privateSlider').value) / 100;
+  const pool       = revenue * 0.15 * 0.5;
+  const privateAmt = attacker === 'none' ? 0 : pool * pct;
+  const weights    = WEIGHTS[stage];
+
+  // labels
+  document.getElementById('revenueLabel').textContent = 'NT$ ' + revenue.toLocaleString();
+  document.getElementById('privateLabel').textContent  =
+    attacker === 'none' ? '—（全公海）' : (pct*100).toFixed(0) + '%（' + fmt(privateAmt) + '）';
+
+  // flow display (always reflects current revenue)
+  document.getElementById('flowRev').textContent    = 'NT$' + fmtK(revenue);
+  document.getElementById('flowProfit').textContent = fmt(revenue * 0.15);
+  document.getElementById('flowPool').textContent   = fmt(pool);
+
+  const { attack, defensePool, result } = calcDist(pool, privateAmt, attacker, weights);
+
+  // summary
+  document.getElementById('summPool').textContent    = fmt(pool);
+  document.getElementById('summAttack').textContent  = fmt(attack);
+  document.getElementById('summDefense').textContent = fmt(defensePool);
+
+  // split bar
+  const attackPct = pool > 0 ? Math.round((attack/pool)*100) : 0;
+  const aSplit = document.getElementById('splitAttack');
+  const dSplit = document.getElementById('splitDefense');
+  aSplit.style.width = attackPct + '%';
+  aSplit.textContent = attackPct > 10 ? `⚡ 進攻 ${fmt(attack)}` : '';
+  dSplit.textContent = `🛡 防守 ${fmt(defensePool)}`;
+
+  // result cards
+  const maxTotal = Math.max(...ROLES.map(r => result[r].total));
+  let cardsHtml = '';
+  ROLES.forEach(r => {
+    const d = result[r];
+    const co = C[r];
+    const isHero = r === attacker;
+    cardsHtml += `
+      <div class="result-card" style="${isHero?'border-color:'+co.hex+';background:'+co.hex+'0a':''}" >
+        <div class="rc-role">${co.label}</div>
+        <div class="rc-total ${co.textCls}">${fmt(d.total)}</div>
+        <div class="rc-sub">
+          ${d.attack > 0 ? `<span style="color:#D85A3099">⚡ ${fmt(d.attack)}</span>` : ''}
+          <span style="color:#1D9E7599">🛡 ${fmt(d.defense)}</span>
+        </div>
+      </div>`;
+  });
+  document.getElementById('resultGrid').innerHTML = cardsHtml;
+
+  // bar chart
+  let barsHtml = '';
+  ROLES.forEach(r => {
+    const d = result[r];
+    const co = C[r];
+    const w = maxTotal > 0 ? Math.round((d.total/maxTotal)*100) : 0;
+    const bkStr = d.attack > 0
+      ? `防 ${fmt(d.defense)} ＋ 攻 ${fmt(d.attack)}`
+      : `防守 ${fmt(d.defense)}`;
+    barsHtml += `
+      <div class="person-row">
+        <div class="pr-name ${co.textCls}">${co.label}</div>
+        <div class="pr-bar-wrap">
+          <div class="pr-bar ${co.barCls}" style="width:${w}%">${w>22?fmt(d.total):''}</div>
+        </div>
+        <div class="pr-amt ${co.textCls}">${fmt(d.total)}</div>
+        <div class="pr-bk">${bkStr}</div>
+      </div>`;
+  });
+  document.getElementById('personBars').innerHTML = barsHtml;
+}
+
+// init
+updateCalc();
+</script>
+</body>
+</html>
